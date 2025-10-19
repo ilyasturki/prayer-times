@@ -1,6 +1,6 @@
 # Maintainer: Ilyas Turki <turki.ilyass@gmail.com>
 pkgname=prayer-times
-pkgver=0.3.1
+pkgver=0.4.0
 pkgrel=1
 makedepends=('rust')
 arch=('i686' 'x86_64' 'armv6h' 'armv7h')
