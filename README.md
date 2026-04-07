@@ -10,7 +10,7 @@ It uses accurate calculation of prayer times based on geographical coordinates b
 
 ### Arch linux
 
-`prayer-times` is available in the [AUR](https://aur.archlinux.org/). You can install it with yay or paru depending on what you have.
+`prayer-times` is available in the [AUR](https://aur.archlinux.org/packages/prayer-times). You can install it with yay or paru depending on what you have.
 
 ```sh
 yay -S prayer-times
