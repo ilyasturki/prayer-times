@@ -25,7 +25,7 @@ pub struct Arguments {
     #[arg(short = 'L', long)]
     pub longitude: Option<f64>,
 
-    /// Timezone for prayer times (e.g., "America/New_York", "Etc/GMT", "UTC") [default: system timezone]
+    /// Timezone for prayer times (e.g., "America/New_York", "UTC") [default: system timezone]
     #[arg(short = 't', long)]
     pub timezone: Option<String>,
 

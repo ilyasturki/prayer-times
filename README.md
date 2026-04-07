@@ -10,7 +10,7 @@ It uses accurate calculation of prayer times based on geographical coordinates b
 
 ### Arch linux
 
-`prayer-times` is available in the [AUR](https://aur.archlinux.org/). You can install it with yay or paru depending on what you have.
+`prayer-times` is available in the [AUR](https://aur.archlinux.org/packages/prayer-times). You can install it with yay or paru depending on what you have.
 
 ```sh
 yay -S prayer-times
@@ -20,6 +20,32 @@ or
 
 ```sh
 paru -S prayer-times
+```
+
+### NixOS / Nix
+
+Add the flake input to your NixOS configuration:
+
+```nix
+# flake.nix
+{
+  inputs.prayer-times.url = "github:Yasso9/prayer-times";
+
+  outputs = { nixpkgs, prayer-times, ... }: {
+    # Option 1: Add the package directly
+    environment.systemPackages = [ prayer-times.packages.${system}.default ];
+
+    # Option 2: Use the overlay
+    nixpkgs.overlays = [ prayer-times.overlays.default ];
+    environment.systemPackages = [ pkgs.prayer-times ];
+  };
+}
+```
+
+Or run it directly without installing:
+
+```sh
+nix run github:Yasso9/prayer-times
 ```
 
 ### Manual
