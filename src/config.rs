@@ -9,7 +9,7 @@ use crate::method::{MethodVariant, ParamValue};
 use crate::notification_urgency::NotifUrgency;
 use crate::Arguments;
 use chrono::Local;
-use chrono::{TimeZone, Utc};
+use chrono::{NaiveDate, NaiveTime, TimeZone};
 use chrono_tz::OffsetComponents;
 use notify_rust::Urgency;
 use serde::Deserialize;
@@ -145,9 +145,9 @@ impl Config {
         0.
     }
 
-    pub fn timezone_offset(&self) -> i64 {
+    pub fn timezone_offset(&self, date: NaiveDate) -> i64 {
         match &self.timezone {
-            Some(tz_str) => parse_timezone_string(tz_str),
+            Some(tz_str) => parse_timezone_string(tz_str, date),
             None => system_timezone_offset(),
         }
     }
@@ -191,10 +191,9 @@ impl Config {
     }
 }
 
-fn parse_timezone_string(tz_str: &str) -> i64 {
+fn parse_timezone_string(tz_str: &str, date: NaiveDate) -> i64 {
     if let Ok(tz) = tz_str.parse::<chrono_tz::Tz>() {
-        // println!("Parsed timezone: {:?}", timezone_to_offset(tz));
-        return timezone_to_offset(tz);
+        return timezone_to_offset(tz, date);
     }
 
     let offset = system_timezone_offset();
@@ -205,9 +204,9 @@ fn parse_timezone_string(tz_str: &str) -> i64 {
     offset
 }
 
-fn timezone_to_offset(timezone: chrono_tz::Tz) -> i64 {
-    let now_utc = Utc::now();
-    let local_time = timezone.from_utc_datetime(&now_utc.naive_utc());
+fn timezone_to_offset(timezone: chrono_tz::Tz, date: NaiveDate) -> i64 {
+    let noon = date.and_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap());
+    let local_time = timezone.from_local_datetime(&noon).unwrap();
     let offset = local_time.offset();
     let total_offset = offset.base_utc_offset() + offset.dst_offset();
     total_offset.num_hours()

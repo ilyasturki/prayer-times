@@ -78,7 +78,7 @@ impl AstronomicalMeasures {
 
         // https://praytimes.org/calculation#dhuhr
         let dhuhr = {
-            let a = 12. + config.timezone_offset() as f64;
+            let a = 12. + config.timezone_offset(date) as f64;
             let b = config.lon() / 15.;
             let c = equation_of_time;
             a - b - c

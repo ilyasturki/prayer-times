@@ -229,15 +229,14 @@ mod tests {
         let prayers = list_prayers_for_date(&config, date);
 
         // curl -X GET "https://api.aladhan.com/v1/timings/15-03-2024?latitude=30.0444&longitude=31.2357&method=5&timezonestring=Africa/Cairo" -H 'accept: application/json' | jq
-        // There is one hour difference between the API response and the expected times, due to the time zone difference between Cairo and the API's Cairo time zone.
-        assert_eq!(prayers[0].time().format("%H:%M").to_string(), "05:37");
-        assert_eq!(prayers[1].time().format("%H:%M").to_string(), "07:04");
-        assert_eq!(prayers[2].time().format("%H:%M").to_string(), "13:03");
-        assert_eq!(prayers[3].time().format("%H:%M").to_string(), "16:29");
-        assert_eq!(prayers[4].time().format("%H:%M").to_string(), "19:03");
-        assert_eq!(prayers[5].time().format("%H:%M").to_string(), "19:03");
-        assert_eq!(prayers[6].time().format("%H:%M").to_string(), "20:20");
-        assert_eq!(prayers[7].time().format("%H:%M").to_string(), "01:03");
+        assert_eq!(prayers[0].time().format("%H:%M").to_string(), "04:37");
+        assert_eq!(prayers[1].time().format("%H:%M").to_string(), "06:04");
+        assert_eq!(prayers[2].time().format("%H:%M").to_string(), "12:03");
+        assert_eq!(prayers[3].time().format("%H:%M").to_string(), "15:29");
+        assert_eq!(prayers[4].time().format("%H:%M").to_string(), "18:03");
+        assert_eq!(prayers[5].time().format("%H:%M").to_string(), "18:03");
+        assert_eq!(prayers[6].time().format("%H:%M").to_string(), "19:20");
+        assert_eq!(prayers[7].time().format("%H:%M").to_string(), "00:03");
     }
 
     #[test]
