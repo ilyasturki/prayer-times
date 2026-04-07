@@ -22,6 +22,32 @@ or
 paru -S prayer-times
 ```
 
+### NixOS / Nix
+
+Add the flake input to your NixOS configuration:
+
+```nix
+# flake.nix
+{
+  inputs.prayer-times.url = "github:Yasso9/prayer-times";
+
+  outputs = { nixpkgs, prayer-times, ... }: {
+    # Option 1: Add the package directly
+    environment.systemPackages = [ prayer-times.packages.${system}.default ];
+
+    # Option 2: Use the overlay
+    nixpkgs.overlays = [ prayer-times.overlays.default ];
+    environment.systemPackages = [ pkgs.prayer-times ];
+  };
+}
+```
+
+Or run it directly without installing:
+
+```sh
+nix run github:Yasso9/prayer-times
+```
+
 ### Manual
 
 Clone the repository and build the executable. You should have `cargo` installed:
