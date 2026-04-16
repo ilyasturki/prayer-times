@@ -17,6 +17,7 @@ use serde::Serialize;
 use std::error::Error;
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
 struct PrayerConfig {
     method: MethodVariant,
     madhab: Madhab,
@@ -27,6 +28,7 @@ struct PrayerConfig {
     isha_mod: i8,
 }
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
 struct NotificationConfig {
     notify_before: bool,
     urgency: NotifUrgency,
@@ -34,6 +36,7 @@ struct NotificationConfig {
     interval: u64,
 }
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
 pub struct Config {
     location: Option<Location>,
     timezone: Option<String>,
@@ -41,26 +44,38 @@ pub struct Config {
     notification: NotificationConfig,
 }
 
+impl Default for PrayerConfig {
+    fn default() -> Self {
+        Self {
+            method: MethodVariant::default(),
+            madhab: Madhab::default(),
+            fajr_mod: 0,
+            dhuhr_mod: 0,
+            asr_mod: 0,
+            maghrib_mod: 0,
+            isha_mod: 0,
+        }
+    }
+}
+
+impl Default for NotificationConfig {
+    fn default() -> Self {
+        Self {
+            notify_before: false,
+            urgency: NotifUrgency::Critical,
+            icon: default_icon(),
+            interval: 20,
+        }
+    }
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
             location: None,
             timezone: None,
-            prayer: PrayerConfig {
-                method: MethodVariant::default(),
-                madhab: Madhab::default(),
-                fajr_mod: 0,
-                dhuhr_mod: 0,
-                asr_mod: 0,
-                maghrib_mod: 0,
-                isha_mod: 0,
-            },
-            notification: NotificationConfig {
-                notify_before: false,
-                urgency: NotifUrgency::Critical,
-                icon: default_icon(),
-                interval: 20,
-            },
+            prayer: PrayerConfig::default(),
+            notification: NotificationConfig::default(),
         }
     }
 }
@@ -234,4 +249,39 @@ fn default_icon() -> path::PathBuf {
 pub fn config_options<'a>() -> (&'a str, &'a str) {
     const PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
     (PROGRAM_NAME, "config")
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::config::Config;
+    use crate::event::Event;
+    use crate::method::ParamValue;
+
+    #[test]
+    fn test_config_from_str() {
+        let config_str = r#"
+        [location]
+        lat = 48.8566
+        lon = 2.3522
+        timezone = "Europe/Paris"
+
+        [prayer]
+        method = "KARACHI"
+        madhab = "Hanafi"
+        "#;
+
+        let config: Config = toml::from_str(config_str).expect("Failed to parse config from string");
+
+        assert_eq!(config.lat(), 48.8566);
+        assert_eq!(config.lon(), 2.3522);
+        assert_eq!(config.fajr_param(), ParamValue::Angle(18.0));
+        assert_eq!(config.isha_param(), ParamValue::Angle(18.0));
+        assert_eq!(config.shadow_multiplier(), 2);
+        assert_eq!(config.offset(Event::Fajr), 0.0);
+        assert_eq!(config.offset(Event::Dhuhr), 0.0);
+        assert_eq!(config.offset(Event::Asr), 0.0);
+        assert_eq!(config.offset(Event::Maghrib), 0.0);
+        assert_eq!(config.offset(Event::Isha), 0.0);
+        assert!(config.icon().ends_with("assets/mosque-svgrepo-com.png"));
+    }
 }
