@@ -73,6 +73,7 @@ Commands:
   prayers         List all the prayers of a specific date (defaults to current day)
   methods         List all methods available for the calculation of the prayer times
   madhab          List all madhab available for the calculation of the prayer times
+  dry-run         Show the next prayer in a notification to test if everything works
   config          Get the path of the toml config file
   generate-shell  Generate shell completions and man pages
   help            Print this message or the help of the given subcommand(s)

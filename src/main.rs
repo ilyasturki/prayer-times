@@ -14,6 +14,7 @@ mod prayers;
 use self::{
     arguments::generation::generate, arguments::Arguments, arguments::Commands, config::Config,
     madhab::Madhab,
+    notification::notify_prayer,
 };
 
 // TODO Use argument::parse() inside the argument module so we don't include this
@@ -71,11 +72,11 @@ fn main() {
         Commands::Madhab => {
             Madhab::list_all();
         }
-        // Commands::DryRun => {
-        //     let config = Config::new(&args);
-        //     let next_prayer = prayers::next(&config);
-        //     notify_prayer(&next_prayer, &config);
-        // }
+        Commands::DryRun => {
+            let config = Config::new(&args);
+            let next_prayer = prayers::next(&config);
+            notify_prayer(&next_prayer, &config);
+        }
         Commands::Config => {
             let (program, config) = config::config_options();
             let result = confy::get_configuration_file_path(program, config);
