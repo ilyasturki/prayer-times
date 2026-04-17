@@ -202,6 +202,7 @@ pub const JORDAN: Method = Method {
 #[derive(
     Default, Debug, Clone, Copy, PartialEq, EnumString, Serialize, Deserialize, EnumIter, Display,
 )]
+#[allow(clippy::upper_case_acronyms)]
 pub enum MethodVariant {
     #[default]
     MWL,

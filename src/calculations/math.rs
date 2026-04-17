@@ -1,7 +1,7 @@
-/// Mathematical utilities for astronomical calculations
-///
-/// This module provides degree-based trigonometric functions and other
-/// mathematical utilities needed for prayer time calculations.
+//! Mathematical utilities for astronomical calculations
+//!
+//! This module provides degree-based trigonometric functions and other
+//! mathematical utilities needed for prayer time calculations.
 
 /// Cosine of angle in degrees
 pub fn dcos(degrees: f64) -> f64 {

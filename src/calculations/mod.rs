@@ -25,7 +25,7 @@ fn normalize_hours(hour: f64) -> f64 {
 fn julian_day(date: NaiveDate) -> f64 {
     let day = date.day() as i32;
     let month = date.month() as i32;
-    let year = date.year() as i32;
+    let year = date.year();
 
     let a = (month - 14) / 12;
     let b = 1461 * (year + 4800 + a);

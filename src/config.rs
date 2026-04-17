@@ -16,7 +16,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(default)]
 struct PrayerConfig {
     method: MethodVariant,
@@ -35,27 +35,13 @@ struct NotificationConfig {
     icon: path::PathBuf,
     interval: u64,
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct Config {
     location: Option<Location>,
     timezone: Option<String>,
     prayer: PrayerConfig,
     notification: NotificationConfig,
-}
-
-impl Default for PrayerConfig {
-    fn default() -> Self {
-        Self {
-            method: MethodVariant::default(),
-            madhab: Madhab::default(),
-            fajr_mod: 0,
-            dhuhr_mod: 0,
-            asr_mod: 0,
-            maghrib_mod: 0,
-            isha_mod: 0,
-        }
-    }
 }
 
 impl Default for NotificationConfig {
@@ -65,17 +51,6 @@ impl Default for NotificationConfig {
             urgency: NotifUrgency::Critical,
             icon: default_icon(),
             interval: 20,
-        }
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            location: None,
-            timezone: None,
-            prayer: PrayerConfig::default(),
-            notification: NotificationConfig::default(),
         }
     }
 }
@@ -98,8 +73,8 @@ impl Config {
         let mut interval = config.notification.interval;
         if let Some(Commands::Daemon(daemon)) = &args.command {
             is_daemon = true;
-            if daemon.interval.is_some() {
-                interval = daemon.interval.unwrap();
+            if let Some(daemon_interval) = daemon.interval {
+                interval = daemon_interval;
             }
         }
         if interval == 0 {
@@ -128,7 +103,7 @@ impl Config {
             location: Some(location),
             timezone: args.timezone.clone().or(config.timezone),
             prayer: PrayerConfig {
-                method: args.method.clone().unwrap_or(config.prayer.method),
+                method: args.method.unwrap_or(config.prayer.method),
                 madhab: args.madhab.clone().unwrap_or(config.prayer.madhab),
                 fajr_mod: args.fajr_mod.unwrap_or(config.prayer.fajr_mod),
                 dhuhr_mod: args.dhuhr_mod.unwrap_or(config.prayer.dhuhr_mod),
