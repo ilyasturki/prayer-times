@@ -1,15 +1,8 @@
 /target/
-/pkg/
-/prayer-time*.tar.gz
-/prayer-time*.zst
 .cargo/
-# Devenv
-.devenv*
-devenv.local.nix
 
 # direnv
 .direnv
 
-# pre-commit
-.pre-commit-config.yaml
+# Nix build output
 result

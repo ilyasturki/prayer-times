@@ -10,16 +10,14 @@ It uses accurate calculation of prayer times based on geographical coordinates b
 
 ### Arch linux
 
-`prayer-times` is available in the [AUR](https://aur.archlinux.org/packages/prayer-times). You can install it with yay or paru depending on what you have.
+`prayer-times` is available in the AUR. Two packages are published on each release:
+
+- [`prayer-times`](https://aur.archlinux.org/packages/prayer-times) builds from source.
+- [`prayer-times-bin`](https://aur.archlinux.org/packages/prayer-times-bin) installs the pre-compiled binary from the GitHub release (faster install, no Rust toolchain needed).
 
 ```sh
-yay -S prayer-times
-```
-
-or
-
-```sh
-paru -S prayer-times
+yay -S prayer-times        # or prayer-times-bin
+paru -S prayer-times       # or prayer-times-bin
 ```
 
 ### NixOS / Nix
@@ -47,6 +45,18 @@ Or run it directly without installing:
 ```sh
 nix run github:Yasso9/prayer-times
 ```
+
+### Cargo (crates.io)
+
+```sh
+cargo install prayer-times
+```
+
+Requires `pkg-config`, `libdbus-1-dev`, and `libssl-dev` (or your distribution's equivalents) at build time.
+
+### Pre-built binary
+
+Download the Linux `x86_64` or `aarch64` binary for your architecture from the [latest release](https://github.com/Yasso9/prayer-times/releases/latest) and place it somewhere on your `PATH`.
 
 ### Manual
 
@@ -167,6 +177,20 @@ Shafi
 Hanafi
 ```
 
+
+## Release process
+
+Releases are fully automated via GitHub Actions. To cut a release:
+
+1. Add a new `## [X.Y.Z] - YYYY-MM-DD` section to [`CHANGELOG.md`](CHANGELOG.md) describing the changes.
+2. Bump `version` in [`Cargo.toml`](Cargo.toml) to match. The Nix flake reads the version from `Cargo.toml`, so no other file needs editing.
+3. Commit, tag (`git tag vX.Y.Z`), and push the tag.
+
+The `Release` workflow publishes in parallel to:
+
+- [crates.io](https://crates.io/crates/prayer-times)
+- GitHub Releases (Linux `x86_64` and `aarch64` binaries + shell completions)
+- AUR (`prayer-times` and `prayer-times-bin`)
 
 ## License
 
