@@ -180,11 +180,14 @@ Hanafi
 
 ## Release process
 
-Releases are fully automated via GitHub Actions. To cut a release:
+Releases are fully automated via GitHub Actions and driven locally by [`cargo-release`](https://github.com/crate-ci/cargo-release) (`cargo install cargo-release`).
 
-1. Add a new `## [X.Y.Z] - YYYY-MM-DD` section to [`CHANGELOG.md`](CHANGELOG.md) describing the changes.
-2. Bump `version` in [`Cargo.toml`](Cargo.toml) to match. The Nix flake reads the version from `Cargo.toml`, so no other file needs editing.
-3. Commit, tag (`git tag vX.Y.Z`), and push the tag.
+To cut a release:
+
+1. Update [`CHANGELOG.md`](CHANGELOG.md) with a new `## [X.Y.Z] - YYYY-MM-DD` section describing the changes (leave it unstaged — `cargo-release` will pick it up).
+2. Run `cargo release <level> --execute`, where `<level>` is `patch`, `minor`, `major`, or an explicit `X.Y.Z`.
+
+That single command bumps `version` in [`Cargo.toml`](Cargo.toml), folds the changelog edit into a single release commit, tags `vX.Y.Z`, and pushes commit + tag. The Nix flake reads the version from `Cargo.toml`, so no other file needs editing. Run without `--execute` first for a dry run.
 
 The `Release` workflow publishes in parallel to:
 
