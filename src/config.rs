@@ -269,7 +269,8 @@ mod tests {
         madhab = "Hanafi"
         "#;
 
-        let config: Config = toml::from_str(config_str).expect("Failed to parse config from string");
+        let config: Config =
+            toml::from_str(config_str).expect("Failed to parse config from string");
 
         assert_eq!(config.lat(), 48.8566);
         assert_eq!(config.lon(), 2.3522);

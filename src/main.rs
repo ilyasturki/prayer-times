@@ -13,8 +13,7 @@ mod prayers;
 
 use self::{
     arguments::generation::generate, arguments::Arguments, arguments::Commands, config::Config,
-    madhab::Madhab,
-    notification::notify_prayer,
+    madhab::Madhab, notification::notify_prayer,
 };
 
 // TODO Use argument::parse() inside the argument module so we don't include this
