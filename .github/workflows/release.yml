@@ -1,0 +1,274 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - 'v*'
+
+permissions:
+    contents: write
+
+jobs:
+    build:
+        strategy:
+            matrix:
+                include:
+                    - target: x86_64-unknown-linux-gnu
+                      runner: ubuntu-latest
+                      asset: prayer-times-linux-x64
+                    - target: aarch64-unknown-linux-gnu
+                      runner: ubuntu-24.04-arm
+                      asset: prayer-times-linux-arm64
+        runs-on: ${{ matrix.runner }}
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Install system dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y pkg-config libdbus-1-dev libssl-dev
+
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.target }}
+
+            - uses: Swatinem/rust-cache@v2
+              with:
+                  key: ${{ matrix.target }}
+
+            - name: Build release binary
+              run: cargo build --release --locked --target ${{ matrix.target }}
+
+            - name: Rename binary
+              run: cp target/${{ matrix.target }}/release/prayer-times ${{ matrix.asset }}
+
+            - name: Generate shell completions
+              if: matrix.target == 'x86_64-unknown-linux-gnu'
+              run: |
+                  ./${{ matrix.asset }} generate-shell
+
+            - name: Upload binary artifact
+              uses: actions/upload-artifact@v7
+              with:
+                  name: ${{ matrix.asset }}
+                  path: ${{ matrix.asset }}
+
+            - name: Upload completions artifact
+              if: matrix.target == 'x86_64-unknown-linux-gnu'
+              uses: actions/upload-artifact@v7
+              with:
+                  name: completions
+                  path: |
+                      target/completions/prayer-times.bash
+                      target/completions/_prayer-times
+                      target/completions/prayer-times.fish
+
+    crates-io:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Install system dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y pkg-config libdbus-1-dev libssl-dev
+
+            - uses: dtolnay/rust-toolchain@stable
+            - uses: Swatinem/rust-cache@v2
+
+            - name: Publish to crates.io
+              run: cargo publish --locked --token ${{ secrets.CRATES_IO_TOKEN }}
+
+    github-release:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Download binaries
+              uses: actions/download-artifact@v8
+              with:
+                  pattern: prayer-times-linux-*
+                  merge-multiple: true
+
+            - name: Download completions
+              uses: actions/download-artifact@v8
+              with:
+                  name: completions
+                  path: completions
+
+            - name: Extract changelog
+              id: changelog
+              run: |
+                  version="${GITHUB_REF_NAME#v}"
+                  body=$(awk "/^## \\[${version}\\]/{found=1; next} /^## \\[/{if(found) exit} found" CHANGELOG.md)
+                  {
+                    echo "body<<EOF"
+                    echo "$body"
+                    echo "EOF"
+                  } >> "$GITHUB_OUTPUT"
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v3
+              with:
+                  body: ${{ steps.changelog.outputs.body }}
+                  files: |
+                      prayer-times-linux-x64
+                      prayer-times-linux-arm64
+                      completions/prayer-times.bash
+                      completions/_prayer-times
+                      completions/prayer-times.fish
+
+    aur:
+        needs: github-release
+        runs-on: ubuntu-latest
+        steps:
+            - name: Generate PKGBUILD
+              run: |
+                  version="${GITHUB_REF_NAME#v}"
+
+                  cat > PKGBUILD << 'HEREDOC'
+                  # Maintainer: Ilyas Turki <turki.ilyass at gmail dot com>
+                  pkgname=prayer-times
+                  pkgver=${VERSION}
+                  pkgrel=1
+                  pkgdesc="Islamic Prayer Times Information and Notifications"
+                  arch=('x86_64' 'aarch64')
+                  url="https://github.com/Yasso9/prayer-times"
+                  license=('MIT')
+                  depends=('dbus' 'openssl')
+                  makedepends=('rust' 'cargo')
+                  conflicts=('prayer-times-bin')
+                  source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
+                  sha256sums=('SKIP')
+                  options=(!debug !lto)
+
+                  prepare() {
+                      cd "${pkgname}-${pkgver}"
+                      export CARGO_HOME="${srcdir}/.cargo"
+                      cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+                  }
+
+                  build() {
+                      cd "${pkgname}-${pkgver}"
+                      export RUSTFLAGS="--remap-path-prefix=${srcdir}=/"
+                      export CARGO_HOME="${srcdir}/.cargo"
+                      export CARGO_TARGET_DIR=target
+                      cargo build --release --frozen --locked
+                      ./target/release/${pkgname} generate-shell
+                  }
+
+                  check() {
+                      cd "${pkgname}-${pkgver}"
+                      export CARGO_HOME="${srcdir}/.cargo"
+                      cargo test --release --frozen --locked -- --skip config::tests::test_config_from_str
+                  }
+
+                  package() {
+                      cd "${pkgname}-${pkgver}"
+
+                      install -Dm755 "target/release/${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
+
+                      install -Dm644 "target/completions/${pkgname}.bash" \
+                          "${pkgdir}/usr/share/bash-completion/completions/${pkgname}"
+                      install -Dm644 "target/completions/_${pkgname}" \
+                          "${pkgdir}/usr/share/zsh/site-functions/_${pkgname}"
+                      install -Dm644 "target/completions/${pkgname}.fish" \
+                          "${pkgdir}/usr/share/fish/vendor_completions.d/${pkgname}.fish"
+
+                      install -Dm644 "assets/mosque-svgrepo-com.png" \
+                          "${pkgdir}/usr/share/icons/hicolor/128x128/apps/${pkgname}.png"
+                      install -Dm644 "README.md" \
+                          "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+                      install -Dm644 "LICENSE" \
+                          "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+                  }
+                  HEREDOC
+
+                  sed -i "s/\${VERSION}/${version}/g" PKGBUILD
+
+            - name: Publish to AUR
+              uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
+              with:
+                  pkgname: prayer-times
+                  pkgbuild: ./PKGBUILD
+                  commit_username: Ilyas Turki
+                  commit_email: turki.ilyass@gmail.com
+                  ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+                  commit_message: ${{ github.ref_name }}
+                  force_push: true
+
+    aur-bin:
+        needs: github-release
+        runs-on: ubuntu-latest
+        steps:
+            - name: Download binaries
+              uses: actions/download-artifact@v8
+              with:
+                  pattern: prayer-times-linux-*
+                  merge-multiple: true
+
+            - name: Generate PKGBUILD
+              run: |
+                  version="${GITHUB_REF_NAME#v}"
+                  x64_sha=$(sha256sum prayer-times-linux-x64 | cut -d ' ' -f 1)
+                  arm64_sha=$(sha256sum prayer-times-linux-arm64 | cut -d ' ' -f 1)
+
+                  cat > PKGBUILD << 'HEREDOC'
+                  # Maintainer: Ilyas Turki <turki.ilyass at gmail dot com>
+                  pkgname=prayer-times-bin
+                  _pkgname=prayer-times
+                  pkgver=${VERSION}
+                  pkgrel=1
+                  pkgdesc="Islamic Prayer Times Information and Notifications"
+                  arch=('x86_64' 'aarch64')
+                  url="https://github.com/Yasso9/prayer-times"
+                  license=('MIT')
+                  depends=('dbus' 'openssl')
+                  provides=('prayer-times')
+                  conflicts=('prayer-times')
+                  options=('!strip')
+
+                  source=(
+                      "LICENSE-${pkgver}::${url}/raw/v${pkgver}/LICENSE"
+                      "README-${pkgver}.md::${url}/raw/v${pkgver}/README.md"
+                      "${_pkgname}.bash-${pkgver}::${url}/releases/download/v${pkgver}/prayer-times.bash"
+                      "_${_pkgname}-${pkgver}::${url}/releases/download/v${pkgver}/_prayer-times"
+                      "${_pkgname}.fish-${pkgver}::${url}/releases/download/v${pkgver}/prayer-times.fish"
+                  )
+                  source_x86_64=("${pkgname}-${pkgver}-x86_64::${url}/releases/download/v${pkgver}/prayer-times-linux-x64")
+                  source_aarch64=("${pkgname}-${pkgver}-aarch64::${url}/releases/download/v${pkgver}/prayer-times-linux-arm64")
+                  sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+                  sha256sums_x86_64=('${X64_SHA}')
+                  sha256sums_aarch64=('${ARM64_SHA}')
+
+                  package() {
+                      install -Dm755 "${pkgname}-${pkgver}-${CARCH}" "${pkgdir}/usr/bin/${_pkgname}"
+
+                      install -Dm644 "${_pkgname}.bash-${pkgver}" \
+                          "${pkgdir}/usr/share/bash-completion/completions/${_pkgname}"
+                      install -Dm644 "_${_pkgname}-${pkgver}" \
+                          "${pkgdir}/usr/share/zsh/site-functions/_${_pkgname}"
+                      install -Dm644 "${_pkgname}.fish-${pkgver}" \
+                          "${pkgdir}/usr/share/fish/vendor_completions.d/${_pkgname}.fish"
+
+                      install -Dm644 "LICENSE-${pkgver}" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+                      install -Dm644 "README-${pkgver}.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+                  }
+                  HEREDOC
+
+                  sed -i "s/\${VERSION}/${version}/g" PKGBUILD
+                  sed -i "s/\${X64_SHA}/${x64_sha}/g" PKGBUILD
+                  sed -i "s/\${ARM64_SHA}/${arm64_sha}/g" PKGBUILD
+
+            - name: Publish to AUR
+              uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
+              with:
+                  pkgname: prayer-times-bin
+                  pkgbuild: ./PKGBUILD
+                  commit_username: Ilyas Turki
+                  commit_email: turki.ilyass@gmail.com
+                  ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+                  commit_message: ${{ github.ref_name }}
+                  force_push: true
