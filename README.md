@@ -73,7 +73,8 @@ Commands:
   prayers         List all the prayers of a specific date (defaults to current day)
   methods         List all methods available for the calculation of the prayer times
   madhab          List all madhab available for the calculation of the prayer times
-  config          Show the next prayer in a notification to test if everything works Get the path of the toml config file
+  dry-run         Show the next prayer in a notification to test if everything works
+  config          Get the path of the toml config file
   generate-shell  Generate shell completions and man pages
   help            Print this message or the help of the given subcommand(s)
 
@@ -95,7 +96,7 @@ Options:
   -V, --version                        Print version
 ```
 
-You can also configure the program from a config file located in `$XDG_CONFIG_HOME/prayer-times/config.toml`. Here is the default config :
+You can also configure the program from a config file located at `$XDG_CONFIG_HOME/prayer-times/config.toml` (usually `~/.config/prayer-times/config.toml`). Here is the default config :
 
 ```toml
 [prayer]
@@ -113,7 +114,7 @@ urgency = "Critical"
 interval = 20
 ```
 
-If you specify cli arguments, it will always take precedence on what you have on your config. If you don't specify any latitude and longitude it will be infered from your IP address. Location from an IP address is not accurate so I advise you greatly to specify your own latitude and longitude if you want to have the most accurate prayer time.
+If you specify CLI arguments, they take precedence over what you have in your config. If you don't specify any latitude and longitude, they will be inferred from your IP address. IP-based location is not very accurate, so specifying your own latitude and longitude is recommended for more accurate prayer times. To set location in the config file, use the `location` section with `lat` and `lon`. CLI flags use `--latitude` and `--longitude`.
 
 ## Examples
 

@@ -86,7 +86,7 @@ pub enum Commands {
     /// List all madhab available for the calculation of the prayer times
     Madhab,
     /// Show the next prayer in a notification to test if everything works
-    // DryRun,
+    DryRun,
     /// Get the path of the toml config file
     Config,
     /// Generate shell completions and man pages
