@@ -8,7 +8,8 @@ readme = "README.md"
 homepage = "https://github.com/Yasso9/prayer-times"
 repository = "https://github.com/Yasso9/prayer-times"
 license = "MIT"
-exclude = ["/PKGBUILD"]
+keywords = ["prayer", "islam", "adhan", "salah", "notification"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 chrono = "0.4.44"
