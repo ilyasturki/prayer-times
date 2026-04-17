@@ -7,13 +7,10 @@ fn send_notification(summary: String, urgency: Urgency, icon: PathBuf) {
     let mut notification = Notification::new(); // so the notification will live
     let notification = notification.summary(&summary).urgency(urgency);
 
-    // ne pas faire un expect mais un simple if suffit
-    let full_path = std::fs::canonicalize(icon).expect("Failed to resolve icon path");
-    if let Some(icon_str) = full_path.to_str() {
-        println!("Setting icon for notification: {}", icon_str);
-        notification.icon(icon_str);
-    } else {
-        println!("Failed to set icon for notification");
+    if let Ok(full_path) = std::fs::canonicalize(icon) {
+        if let Some(icon_str) = full_path.to_str() {
+            notification.icon(icon_str);
+        }
     }
 
     match notification.show() {
