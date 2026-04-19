@@ -29,7 +29,7 @@ pub struct Arguments {
     #[arg(long)]
     pub no_geolocation: bool,
 
-    /// Timezone for prayer times (e.g., "`America/New_York`", "UTC") [default: system timezone]
+    /// Timezone for prayer times (e.g., "America/New_York", "UTC") [default: system timezone]
     #[arg(short = 't', long)]
     pub timezone: Option<String>,
 
@@ -75,7 +75,7 @@ pub struct Arguments {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Start the process that will send notifications on prayers time \[default\]
+    /// Start the process that will send notifications on prayers time (default)
     Daemon(DaemonArgs),
     /// Get the previous prayer
     Previous,

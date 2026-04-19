@@ -52,7 +52,7 @@ nix run github:Yasso9/prayer-times
 cargo install prayer-times
 ```
 
-Requires `pkg-config`, `libdbus-1-dev`, and `libssl-dev` (or your distribution's equivalents) at build time.
+Requires `pkg-config` and `libssl-dev` (or your distribution's equivalents) at build time. A running D-Bus session bus is needed at runtime to deliver desktop notifications (usually provided by your desktop environment).
 
 ### Pre-built binary
 
@@ -76,7 +76,7 @@ Islamic Prayer Times Information and Notifications
 Usage: prayer-times [OPTIONS] [COMMAND]
 
 Commands:
-  daemon          Start the process that will send notifications on prayers time [default]
+  daemon          Start the process that will send notifications on prayers time (default)
   previous        Get the previous prayer
   current         Get the current prayer
   next            Get the next prayer
@@ -92,7 +92,7 @@ Options:
   -l, --latitude <LATITUDE>            Latitude. Defaults to the current location
   -L, --longitude <LONGITUDE>          Longitude. Defaults to the current location
       --no-geolocation                 Disable the IP-based geolocation fallback used when no location is set
-  -t, --timezone <TIMEZONE>            Timezone for prayer times (e.g., "America/New_York", "Etc/GMT", "UTC") [default: system timezone]
+  -t, --timezone <TIMEZONE>            Timezone for prayer times (e.g., "America/New_York", "UTC") [default: system timezone]
   -m, --method <METHOD>                Calculation Method to use
   -M, --madhab <MADHAB>                Madhab to use
       --fajr-mod <FAJR_MOD>            Minutes to add or remove to the Fajr time
@@ -107,7 +107,12 @@ Options:
   -V, --version                        Print version
 ```
 
-You can also configure the program from a config file located at `$XDG_CONFIG_HOME/prayer-times/config.toml` (usually `~/.config/prayer-times/config.toml`). Here is the default config :
+A few subcommands accept their own options:
+
+- `daemon -i, --interval <SECONDS>` — polling interval used by the background loop (overrides `notification.interval` in the config; defaults to the config value).
+- `prayers -d, --date <YYYY-MM-DD>` — list prayer times for a specific date instead of today.
+
+You can also configure the program from a config file located at `$XDG_CONFIG_HOME/prayer-times/config.toml` (usually `~/.config/prayer-times/config.toml`). Here is the default config:
 
 ```toml
 [prayer]
@@ -122,18 +127,31 @@ isha_mod = 0
 [notification]
 notify_before = false
 urgency = "Critical"
+icon = "/usr/share/icons/mosque-svgrepo-com.png"
 interval = 20
 ```
 
-If you specify CLI arguments, they take precedence over what you have in your config. If you don't specify any latitude and longitude, they will be inferred from your IP address. IP-based location is not very accurate, so specifying your own latitude and longitude is recommended for more accurate prayer times. To set location in the config file, use the `location` section with `lat` and `lon`. CLI flags use `--latitude` and `--longitude`.
+Location and timezone are optional and have no defaults (they fall back to IP-based geolocation and the system timezone respectively). When you want to pin them, add:
 
-> **Privacy note:** The IP-based fallback sends your public IP to a third-party geolocation service on every launch when no location is configured. If you'd rather not make that request, set a location explicitly or pass `--no-geolocation` to disable the fallback.
+```toml
+timezone = "Europe/Paris"
+
+[location]
+lat = 48.8566
+lon = 2.3522
+```
+
+`timezone` and `[location]` live at the top of the file, above the `[prayer]` and `[notification]` sections.
+
+If you specify CLI arguments, they take precedence over what you have in your config. If you don't specify any latitude and longitude, they will be inferred from your IP address. IP-based location is not very accurate, so specifying your own latitude and longitude is recommended for more accurate prayer times. CLI flags use `--latitude` and `--longitude`.
+
+> **Privacy note:** When no location is configured, the program picks a non-loopback IP from your network interfaces and sends it to a third-party geolocation service on every launch. If you'd rather not make that request, set a location explicitly or pass `--no-geolocation` to disable the fallback.
 
 ## Examples
 
 `prayer-times next`
 ```
-Adhan Dhuhr in 01:13
+Dhuhr in 01H13
 ```
 
 `prayer-times prayers`
@@ -180,23 +198,6 @@ Shafi
 Hanafi
 ```
 
-
-## Release process
-
-Releases are fully automated via GitHub Actions and driven locally by [`cargo-release`](https://github.com/crate-ci/cargo-release) (`cargo install cargo-release`).
-
-To cut a release:
-
-1. Update [`CHANGELOG.md`](CHANGELOG.md) with a new `## [X.Y.Z] - YYYY-MM-DD` section describing the changes (leave it unstaged — `cargo-release` will pick it up).
-2. Run `cargo release <level> --execute`, where `<level>` is `patch`, `minor`, `major`, or an explicit `X.Y.Z`.
-
-That single command bumps `version` in [`Cargo.toml`](Cargo.toml), folds the changelog edit into a single release commit, tags `vX.Y.Z`, and pushes commit + tag. The Nix flake reads the version from `Cargo.toml`, so no other file needs editing. Run without `--execute` first for a dry run.
-
-The `Release` workflow publishes in parallel to:
-
-- [crates.io](https://crates.io/crates/prayer-times)
-- GitHub Releases (Linux `x86_64` and `aarch64` binaries + shell completions)
-- AUR (`prayer-times` and `prayer-times-bin`)
 
 ## License
 
