@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-04-19
+
+### Added
+
+- `--no-geolocation` flag (and matching config option) to disable the IP-based location fallback.
+
+### Fixed
+
+- Prayer calculation no longer panics at extreme latitudes where the sun does not reach the required altitude; the affected event falls back to midnight instead of aborting.
+- Latitude and longitude are now validated on startup, with a clear error message when values are out of range or non-finite.
+- Config load errors no longer panic when the underlying error has no source.
+
 ## [0.4.1] - 2026-04-17
 
 ### Added

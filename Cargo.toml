@@ -1,6 +1,6 @@
 [package]
 name = "prayer-times"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Ilyas Turki <turki.ilyass@gmail.com>"]
 edition = "2021"
 description = "Islamic Prayer Times Information and Notifications"
