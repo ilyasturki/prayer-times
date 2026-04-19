@@ -43,146 +43,129 @@ pub fn list_prayers(config: &Config) -> [Prayer; 8] {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::arguments::Arguments;
     use crate::config::Config;
     use crate::madhab::Madhab;
     use crate::method::MethodVariant;
 
-    fn paris_config() -> Config {
-        use crate::arguments::Arguments;
+    struct Fixture {
+        lat: f64,
+        lon: f64,
+        tz: &'static str,
+        method: MethodVariant,
+        madhab: Madhab,
+        fajr_mod: Option<i8>,
+        dhuhr_mod: Option<i8>,
+        asr_mod: Option<i8>,
+        maghrib_mod: Option<i8>,
+        isha_mod: Option<i8>,
+    }
 
+    fn build(f: Fixture) -> Config {
         let args = Arguments {
             command: None,
-            latitude: Some(48.8566),
-            longitude: Some(2.3522),
-            timezone: Some("Europe/Paris".to_string()),
-            method: Some(MethodVariant::FRANCE),
-            madhab: Some(Madhab::Shafi),
+            latitude: Some(f.lat),
+            longitude: Some(f.lon),
+            no_geolocation: true,
+            timezone: Some(f.tz.to_string()),
+            method: Some(f.method),
+            madhab: Some(f.madhab),
+            fajr_mod: f.fajr_mod,
+            dhuhr_mod: f.dhuhr_mod,
+            asr_mod: f.asr_mod,
+            maghrib_mod: f.maghrib_mod,
+            isha_mod: f.isha_mod,
+            notify_before: None,
+            icon: None,
+            urgency: None,
+        };
+        Config::new(&args)
+    }
+
+    fn simple(
+        lat: f64,
+        lon: f64,
+        tz: &'static str,
+        method: MethodVariant,
+        madhab: Madhab,
+    ) -> Config {
+        build(Fixture {
+            lat,
+            lon,
+            tz,
+            method,
+            madhab,
             fajr_mod: None,
             dhuhr_mod: None,
             asr_mod: None,
             maghrib_mod: None,
             isha_mod: None,
-            notify_before: None,
-            icon: None,
-            urgency: None,
-        };
+        })
+    }
 
-        Config::new(&args)
+    fn paris_config() -> Config {
+        simple(
+            48.8566,
+            2.3522,
+            "Europe/Paris",
+            MethodVariant::FRANCE,
+            Madhab::Shafi,
+        )
     }
 
     fn makkah_config() -> Config {
-        use crate::arguments::Arguments;
-
-        let args = Arguments {
-            command: None,
-            latitude: Some(21.42664),
-            longitude: Some(39.82563),
-            timezone: Some("Asia/Riyadh".to_string()),
-            method: Some(MethodVariant::MAKKAH),
-            madhab: Some(Madhab::Shafi),
-            fajr_mod: None,
-            dhuhr_mod: None,
-            asr_mod: None,
-            maghrib_mod: None,
-            isha_mod: None,
-            notify_before: None,
-            icon: None,
-            urgency: None,
-        };
-
-        Config::new(&args)
+        simple(
+            21.42664,
+            39.82563,
+            "Asia/Riyadh",
+            MethodVariant::MAKKAH,
+            Madhab::Shafi,
+        )
     }
 
     fn cairo_config() -> Config {
-        use crate::arguments::Arguments;
-
-        let args = Arguments {
-            command: None,
-            latitude: Some(30.0444),
-            longitude: Some(31.2357),
-            timezone: Some("Africa/Cairo".to_string()),
-            method: Some(MethodVariant::EGYPT),
-            madhab: Some(Madhab::Shafi),
-            fajr_mod: None,
-            dhuhr_mod: None,
-            asr_mod: None,
-            maghrib_mod: None,
-            isha_mod: None,
-            notify_before: None,
-            icon: None,
-            urgency: None,
-        };
-
-        Config::new(&args)
+        simple(
+            30.0444,
+            31.2357,
+            "Africa/Cairo",
+            MethodVariant::EGYPT,
+            Madhab::Shafi,
+        )
     }
 
     fn istanbul_config() -> Config {
-        use crate::arguments::Arguments;
-
-        let args = Arguments {
-            command: None,
-            latitude: Some(41.0082),
-            longitude: Some(28.9784),
-            timezone: Some("Europe/Istanbul".to_string()),
-            method: Some(MethodVariant::TURKEY),
-            madhab: Some(Madhab::Hanafi),
-            fajr_mod: None,
-            dhuhr_mod: None,
-            asr_mod: None,
-            maghrib_mod: None,
-            isha_mod: None,
-            notify_before: None,
-            icon: None,
-            urgency: None,
-        };
-
-        Config::new(&args)
+        simple(
+            41.0082,
+            28.9784,
+            "Europe/Istanbul",
+            MethodVariant::TURKEY,
+            Madhab::Hanafi,
+        )
     }
 
     fn medina_config() -> Config {
-        use crate::arguments::Arguments;
-
-        let args = Arguments {
-            command: None,
-            latitude: Some(24.5247),
-            longitude: Some(39.5692),
-            timezone: Some("Asia/Riyadh".to_string()),
-            method: Some(MethodVariant::MAKKAH),
-            madhab: Some(Madhab::Hanafi),
-            fajr_mod: None,
-            dhuhr_mod: None,
-            asr_mod: None,
-            maghrib_mod: None,
-            isha_mod: None,
-            notify_before: None,
-            icon: None,
-            urgency: None,
-        };
-
-        Config::new(&args)
+        simple(
+            24.5247,
+            39.5692,
+            "Asia/Riyadh",
+            MethodVariant::MAKKAH,
+            Madhab::Hanafi,
+        )
     }
 
     fn paris_config_with_modifications() -> Config {
-        use crate::arguments::Arguments;
-
-        let args = Arguments {
-            command: None,
-            latitude: Some(48.8566),
-            longitude: Some(2.3522),
-            timezone: Some("Europe/Paris".to_string()),
-            method: Some(MethodVariant::FRANCE),
-            madhab: Some(Madhab::Shafi),
+        build(Fixture {
+            lat: 48.8566,
+            lon: 2.3522,
+            tz: "Europe/Paris",
+            method: MethodVariant::FRANCE,
+            madhab: Madhab::Shafi,
             fajr_mod: Some(5),
             dhuhr_mod: Some(-2),
             asr_mod: Some(3),
             maghrib_mod: Some(-1),
             isha_mod: Some(4),
-            notify_before: None,
-            icon: None,
-            urgency: None,
-        };
-
-        Config::new(&args)
+        })
     }
 
     #[test]

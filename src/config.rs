@@ -91,11 +91,18 @@ impl Config {
             };
         } else if let Some(cfg_location) = config.location {
             location = cfg_location;
-        } else if let Some(auto_location) = current_location(is_daemon) {
-            location = auto_location;
+        } else if !args.no_geolocation {
+            if let Some(auto_location) = current_location(is_daemon) {
+                location = auto_location;
+            } else {
+                eprintln!("No location provided in arguments or config file and impossible to get it automatically");
+                eprintln!("Run the program using the latitude and longitude arguments or set them in the config file");
+                eprintln!("Example : {program} --latitude <LAT> --longitude <LON>");
+                std::process::exit(1);
+            }
         } else {
-            eprintln!("No location provided in arguments or config file and impossible to get it automatically");
-            eprintln!("Run the program using the latitude and longitude arguments or set them in the config file");
+            eprintln!("No location provided and --no-geolocation was set");
+            eprintln!("Set it via --latitude/--longitude or in the config file");
             eprintln!("Example : {program} --latitude <LAT> --longitude <LON>");
             std::process::exit(1);
         }

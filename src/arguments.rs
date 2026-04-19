@@ -25,6 +25,10 @@ pub struct Arguments {
     #[arg(short = 'L', long)]
     pub longitude: Option<f64>,
 
+    /// Disable the IP-based geolocation fallback used when no location is set
+    #[arg(long)]
+    pub no_geolocation: bool,
+
     /// Timezone for prayer times (e.g., "America/New_York", "UTC") [default: system timezone]
     #[arg(short = 't', long)]
     pub timezone: Option<String>,

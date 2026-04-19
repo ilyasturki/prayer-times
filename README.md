@@ -91,6 +91,7 @@ Commands:
 Options:
   -l, --latitude <LATITUDE>            Latitude. Defaults to the current location
   -L, --longitude <LONGITUDE>          Longitude. Defaults to the current location
+      --no-geolocation                 Disable the IP-based geolocation fallback used when no location is set
   -t, --timezone <TIMEZONE>            Timezone for prayer times (e.g., "America/New_York", "Etc/GMT", "UTC") [default: system timezone]
   -m, --method <METHOD>                Calculation Method to use
   -M, --madhab <MADHAB>                Madhab to use
@@ -125,6 +126,8 @@ interval = 20
 ```
 
 If you specify CLI arguments, they take precedence over what you have in your config. If you don't specify any latitude and longitude, they will be inferred from your IP address. IP-based location is not very accurate, so specifying your own latitude and longitude is recommended for more accurate prayer times. To set location in the config file, use the `location` section with `lat` and `lon`. CLI flags use `--latitude` and `--longitude`.
+
+> **Privacy note:** The IP-based fallback sends your public IP to a third-party geolocation service on every launch when no location is configured. If you'd rather not make that request, set a location explicitly or pass `--no-geolocation` to disable the fallback.
 
 ## Examples
 
