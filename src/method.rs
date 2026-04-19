@@ -276,3 +276,64 @@ impl MethodVariant {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{MethodVariant, ParamValue};
+    use strum::IntoEnumIterator;
+
+    #[test]
+    fn test_method_get_returns_correct_params_sample() {
+        let mwl = MethodVariant::MWL.get();
+        assert_eq!(mwl.params.fajr, ParamValue::Angle(18.0));
+        assert_eq!(mwl.params.isha, ParamValue::Angle(17.0));
+
+        let isna = MethodVariant::ISNA.get();
+        assert_eq!(isna.params.fajr, ParamValue::Angle(15.0));
+        assert_eq!(isna.params.isha, ParamValue::Angle(15.0));
+
+        let makkah = MethodVariant::MAKKAH.get();
+        assert_eq!(makkah.params.fajr, ParamValue::Angle(18.5));
+        assert_eq!(makkah.params.isha, ParamValue::Minutes(90));
+
+        let portugal = MethodVariant::PORTUGAL.get();
+        assert_eq!(portugal.params.fajr, ParamValue::Angle(18.0));
+        assert_eq!(portugal.params.isha, ParamValue::Minutes(77));
+
+        let tehran = MethodVariant::TEHRAN.get();
+        assert_eq!(tehran.params.fajr, ParamValue::Angle(17.7));
+        assert_eq!(tehran.params.isha, ParamValue::Angle(14.0));
+    }
+
+    // Guards against forgetting a variant when adding methods: every EnumIter
+    // entry must resolve through .get() without panicking.
+    #[test]
+    fn test_all_variants_have_method() {
+        for variant in MethodVariant::iter() {
+            let method = variant.get();
+            assert!(
+                !method.name.is_empty(),
+                "method name empty for variant {variant:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_default_variant_is_mwl() {
+        assert_eq!(MethodVariant::default(), MethodVariant::MWL);
+    }
+
+    #[test]
+    fn test_from_str_parses_known_names() {
+        assert_eq!(
+            "KARACHI".parse::<MethodVariant>().unwrap(),
+            MethodVariant::KARACHI
+        );
+        assert_eq!(
+            "FRANCE".parse::<MethodVariant>().unwrap(),
+            MethodVariant::FRANCE
+        );
+        assert_eq!("MWL".parse::<MethodVariant>().unwrap(), MethodVariant::MWL);
+        assert!("NOT_A_METHOD".parse::<MethodVariant>().is_err());
+    }
+}

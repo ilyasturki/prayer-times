@@ -11,6 +11,9 @@ mod notification_urgency;
 mod prayer;
 mod prayers;
 
+#[cfg(test)]
+mod test_util;
+
 use self::{
     arguments::generation::generate, arguments::Arguments, arguments::Commands, config::Config,
     madhab::Madhab, notification::notify_prayer,

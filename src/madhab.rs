@@ -25,3 +25,19 @@ impl Madhab {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Madhab;
+
+    #[test]
+    fn test_shadow_multiplier() {
+        assert_eq!(Madhab::Shafi.shadow_multiplier(), 1);
+        assert_eq!(Madhab::Hanafi.shadow_multiplier(), 2);
+    }
+
+    #[test]
+    fn test_default_is_shafi() {
+        assert!(matches!(Madhab::default(), Madhab::Shafi));
+    }
+}

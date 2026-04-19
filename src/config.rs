@@ -191,7 +191,7 @@ impl Config {
     }
 }
 
-fn validate_location(location: &Location) -> Result<(), String> {
+pub(crate) fn validate_location(location: &Location) -> Result<(), String> {
     if !location.lat.is_finite() || !(-90.0..=90.0).contains(&location.lat) {
         return Err(format!(
             "latitude {} is out of range (expected -90..=90)",
@@ -207,7 +207,7 @@ fn validate_location(location: &Location) -> Result<(), String> {
     Ok(())
 }
 
-fn parse_timezone_string(tz_str: &str, date: NaiveDate) -> i64 {
+pub(crate) fn parse_timezone_string(tz_str: &str, date: NaiveDate) -> i64 {
     if let Ok(tz) = tz_str.parse::<chrono_tz::Tz>() {
         return timezone_to_offset(tz, date);
     }
@@ -217,7 +217,7 @@ fn parse_timezone_string(tz_str: &str, date: NaiveDate) -> i64 {
     offset
 }
 
-fn timezone_to_offset(timezone: chrono_tz::Tz, date: NaiveDate) -> i64 {
+pub(crate) fn timezone_to_offset(timezone: chrono_tz::Tz, date: NaiveDate) -> i64 {
     let noon = date.and_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap());
     let local_time = timezone.from_local_datetime(&noon).unwrap();
     let offset = local_time.offset();
@@ -225,7 +225,7 @@ fn timezone_to_offset(timezone: chrono_tz::Tz, date: NaiveDate) -> i64 {
     total_offset.num_hours()
 }
 
-fn system_timezone_offset() -> i64 {
+pub(crate) fn system_timezone_offset() -> i64 {
     let local_time = Local::now();
     let offset = local_time.offset().local_minus_utc();
     let offset_hours = offset / 3600;
@@ -281,5 +281,170 @@ mod tests {
         assert_eq!(config.offset(Event::Maghrib), 0.0);
         assert_eq!(config.offset(Event::Isha), 0.0);
         assert!(config.icon().ends_with("assets/mosque-svgrepo-com.png"));
+    }
+
+    #[test]
+    fn test_validate_location_rejects_nan() {
+        assert!(super::validate_location(&crate::location::Location {
+            lat: f64::NAN,
+            lon: 0.0,
+        })
+        .is_err());
+        assert!(super::validate_location(&crate::location::Location {
+            lat: 0.0,
+            lon: f64::NAN,
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_validate_location_rejects_infinite() {
+        assert!(super::validate_location(&crate::location::Location {
+            lat: f64::INFINITY,
+            lon: 0.0,
+        })
+        .is_err());
+        assert!(super::validate_location(&crate::location::Location {
+            lat: f64::NEG_INFINITY,
+            lon: 0.0,
+        })
+        .is_err());
+        assert!(super::validate_location(&crate::location::Location {
+            lat: 0.0,
+            lon: f64::INFINITY,
+        })
+        .is_err());
+    }
+
+    #[test]
+    fn test_validate_location_rejects_out_of_range() {
+        for (lat, lon) in [(91.0_f64, 0.0), (-91.0, 0.0), (0.0, 181.0), (0.0, -181.0)] {
+            assert!(
+                super::validate_location(&crate::location::Location { lat, lon }).is_err(),
+                "expected reject for lat={lat}, lon={lon}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_validate_location_accepts_boundaries() {
+        for (lat, lon) in [
+            (90.0_f64, 0.0),
+            (-90.0, 0.0),
+            (0.0, 180.0),
+            (0.0, -180.0),
+            (0.0, 0.0),
+        ] {
+            assert!(
+                super::validate_location(&crate::location::Location { lat, lon }).is_ok(),
+                "expected accept for lat={lat}, lon={lon}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_timezone_to_offset_fixed() {
+        let d = chrono::NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
+        assert_eq!(super::timezone_to_offset(chrono_tz::UTC, d), 0);
+        assert_eq!(super::timezone_to_offset(chrono_tz::Asia::Riyadh, d), 3);
+        // Asia/Kolkata is +05:30; the hour-resolution implementation truncates
+        // the half-hour — document that.
+        assert_eq!(super::timezone_to_offset(chrono_tz::Asia::Kolkata, d), 5);
+    }
+
+    #[test]
+    fn test_timezone_to_offset_dst() {
+        let winter = chrono::NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
+        let summer = chrono::NaiveDate::from_ymd_opt(2025, 7, 15).unwrap();
+
+        assert_eq!(
+            super::timezone_to_offset(chrono_tz::Europe::Paris, winter),
+            1
+        );
+        assert_eq!(
+            super::timezone_to_offset(chrono_tz::Europe::Paris, summer),
+            2
+        );
+
+        assert_eq!(
+            super::timezone_to_offset(chrono_tz::America::New_York, winter),
+            -5
+        );
+        assert_eq!(
+            super::timezone_to_offset(chrono_tz::America::New_York, summer),
+            -4
+        );
+    }
+
+    #[test]
+    fn test_parse_timezone_string_invalid_falls_back_to_system() {
+        let d = chrono::NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
+        let fallback = super::parse_timezone_string("Not/A_Real_Tz", d);
+        assert_eq!(fallback, super::system_timezone_offset());
+    }
+
+    #[test]
+    fn test_parse_timezone_string_valid() {
+        let d = chrono::NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
+        assert_eq!(super::parse_timezone_string("UTC", d), 0);
+        assert_eq!(super::parse_timezone_string("Asia/Riyadh", d), 3);
+    }
+
+    #[test]
+    fn test_offset_per_event_applies_minute_modifier() {
+        use crate::arguments::Arguments;
+        use crate::madhab::Madhab;
+        use crate::method::MethodVariant;
+
+        let args = Arguments {
+            command: None,
+            latitude: Some(0.0),
+            longitude: Some(0.0),
+            no_geolocation: true,
+            timezone: Some("UTC".to_string()),
+            method: Some(MethodVariant::MWL),
+            madhab: Some(Madhab::Shafi),
+            fajr_mod: Some(5),
+            dhuhr_mod: Some(-10),
+            asr_mod: Some(15),
+            maghrib_mod: Some(-20),
+            isha_mod: Some(25),
+            notify_before: None,
+            icon: None,
+            urgency: None,
+        };
+        let config = Config::new(&args);
+
+        assert!((config.offset(Event::Fajr) - 5.0 / 60.0).abs() < 1e-10);
+        assert!((config.offset(Event::Dhuhr) + 10.0 / 60.0).abs() < 1e-10);
+        assert!((config.offset(Event::Asr) - 15.0 / 60.0).abs() < 1e-10);
+        assert!((config.offset(Event::Maghrib) + 20.0 / 60.0).abs() < 1e-10);
+        assert!((config.offset(Event::Isha) - 25.0 / 60.0).abs() < 1e-10);
+
+        // Sunrise / Sunset / Midnight are never offset, even when per-prayer
+        // modifiers are set.
+        assert_eq!(config.offset(Event::Sunrise), 0.0);
+        assert_eq!(config.offset(Event::Sunset), 0.0);
+        assert_eq!(config.offset(Event::Midnight), 0.0);
+    }
+
+    #[test]
+    fn test_config_from_str_empty_uses_defaults() {
+        let config: Config = toml::from_str("").expect("Failed to parse empty config");
+
+        assert_eq!(config.fajr_param(), ParamValue::Angle(18.0));
+        assert_eq!(config.isha_param(), ParamValue::Angle(17.0));
+        assert_eq!(config.shadow_multiplier(), 1);
+        assert!(!config.notify_before());
+        assert_eq!(config.interval(), 20);
+        for event in [
+            Event::Fajr,
+            Event::Dhuhr,
+            Event::Asr,
+            Event::Maghrib,
+            Event::Isha,
+        ] {
+            assert_eq!(config.offset(event), 0.0);
+        }
     }
 }

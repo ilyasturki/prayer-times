@@ -83,4 +83,42 @@ mod tests {
     fn test_darccot_zero() {
         assert!(darccot(0.0).is_nan());
     }
+
+    #[test]
+    fn test_darcsin_known_values() {
+        assert!((darcsin(0.5) - 30.0).abs() < 1e-10);
+        assert!((darcsin(1.0) - 90.0).abs() < 1e-10);
+        assert!((darcsin(-1.0) + 90.0).abs() < 1e-10);
+        assert!(darcsin(0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_darccos_known_values() {
+        assert!((darccos(0.5) - 60.0).abs() < 1e-10);
+        assert!(darccos(1.0).abs() < 1e-10);
+        assert!((darccos(-1.0) - 180.0).abs() < 1e-10);
+        assert!((darccos(0.0) - 90.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_darctan2_quadrants() {
+        assert!((darctan2(1.0, 1.0) - 45.0).abs() < 1e-10);
+        assert!((darctan2(1.0, -1.0) - 135.0).abs() < 1e-10);
+        assert!((darctan2(-1.0, -1.0) + 135.0).abs() < 1e-10);
+        assert!((darctan2(-1.0, 1.0) + 45.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_darccot_known_values() {
+        assert!((darccot(1.0) - 45.0).abs() < 1e-10);
+        assert!((darccot(-1.0) + 45.0).abs() < 1e-10);
+    }
+
+    // dtan(90°) is mathematically infinite; float arithmetic just makes it
+    // huge rather than ±inf. Document the observable surface so a future
+    // "improve trig precision" refactor doesn't silently change it.
+    #[test]
+    fn test_dtan_ninety_degenerates() {
+        assert!(dtan(90.0).abs() > 1e10);
+    }
 }

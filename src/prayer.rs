@@ -109,3 +109,100 @@ impl Prayer {
         // format!("{} at {} the {}", self.event(), self.time(), self.date())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Prayer;
+    use crate::event::Event;
+    use crate::test_util::paris_config;
+    use chrono::NaiveDate;
+
+    fn paris_date() -> NaiveDate {
+        NaiveDate::from_ymd_opt(2025, 10, 2).unwrap()
+    }
+
+    #[test]
+    fn test_partial_eq_same_event_and_time() {
+        let config = paris_config();
+        let date = paris_date();
+        let a = Prayer::new(Event::Fajr, date, &config);
+        let b = Prayer::new(Event::Fajr, date, &config);
+        assert!(a == b);
+
+        let c = Prayer::new(Event::Dhuhr, date, &config);
+        assert!(a != c);
+    }
+
+    #[test]
+    fn test_previous_stays_same_day_when_possible() {
+        let config = paris_config();
+        let date = paris_date();
+        let isha = Prayer::new(Event::Isha, date, &config);
+        let previous = isha.previous();
+        assert_eq!(previous.event(), Event::Maghrib);
+        assert_eq!(previous.date(), date);
+    }
+
+    // Fajr's previous is Isha, which for Paris always belongs to the prior day.
+    // Exercises the checked_sub_days branch at prayer.rs:54.
+    #[test]
+    fn test_previous_crosses_to_prior_day() {
+        let config = paris_config();
+        let date = paris_date();
+        let fajr = Prayer::new(Event::Fajr, date, &config);
+        let previous = fajr.previous();
+        assert_eq!(previous.event(), Event::Isha);
+        assert_eq!(
+            previous.date(),
+            NaiveDate::from_ymd_opt(2025, 10, 1).unwrap()
+        );
+    }
+
+    // Isha.next() is Midnight; Midnight's time-of-day (01:39 for Paris
+    // 2025-10-02) is earlier than Isha's (20:35), so the next() helper takes
+    // the checked_add_days branch at prayer.rs and rebuilds measures for the
+    // following day.
+    #[test]
+    fn test_next_crosses_to_following_day() {
+        let config = paris_config();
+        let date = paris_date();
+        let isha = Prayer::new(Event::Isha, date, &config);
+        let next = isha.next();
+
+        assert_eq!(next.event(), Event::Midnight);
+        // Resulting midnight must be strictly after isha on the wall clock,
+        // which is the invariant the cross-day logic exists to maintain.
+        assert!(next.date_time() > isha.date_time());
+    }
+
+    #[test]
+    fn test_text_time_format() {
+        let config = paris_config();
+        let fajr = Prayer::new(Event::Fajr, paris_date(), &config);
+        let text = fajr.text_time();
+        assert!(text.starts_with("Fajr at "));
+        assert!(text.len() == "Fajr at HH:MM:SS".len());
+    }
+
+    // For a date far in the past, the duration sign is stable regardless of
+    // wall-clock time, so these tests avoid flakiness without needing an
+    // injected clock.
+    #[test]
+    fn test_text_duration_since_format_for_old_date() {
+        let config = paris_config();
+        let date = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+        let fajr = Prayer::new(Event::Fajr, date, &config);
+        let text = fajr.text_duration();
+        assert!(text.starts_with("Fajr since "));
+        assert!(text.contains('H'));
+    }
+
+    #[test]
+    fn test_time_has_passed_for_old_date() {
+        let config = paris_config();
+        let date = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+        let fajr = Prayer::new(Event::Fajr, date, &config);
+        assert!(fajr.time_has_passed());
+        assert_eq!(fajr.time_remaining(), chrono::Duration::zero());
+    }
+}

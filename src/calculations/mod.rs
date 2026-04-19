@@ -3,7 +3,7 @@ use chrono::{Datelike, Days, NaiveDate, NaiveDateTime, NaiveTime};
 
 mod math;
 
-fn positive_mod(value: f64, modulus: f64) -> f64 {
+pub(crate) fn positive_mod(value: f64, modulus: f64) -> f64 {
     let result = value - modulus * (value / modulus).floor();
     if result < 0. {
         result + modulus
@@ -14,7 +14,7 @@ fn positive_mod(value: f64, modulus: f64) -> f64 {
     }
 }
 
-fn normalize_degrees(angle: f64) -> f64 {
+pub(crate) fn normalize_degrees(angle: f64) -> f64 {
     positive_mod(angle, 360.)
 }
 fn normalize_hours(hour: f64) -> f64 {
@@ -22,7 +22,7 @@ fn normalize_hours(hour: f64) -> f64 {
 }
 
 // https://orbital-mechanics.space/reference/julian-date.html
-fn julian_day(date: NaiveDate) -> f64 {
+pub(crate) fn julian_day(date: NaiveDate) -> f64 {
     let day = date.day() as i32;
     let month = date.month() as i32;
     let year = date.year();
@@ -176,5 +176,112 @@ impl AstronomicalMeasures {
             self.date()
         };
         NaiveDateTime::new(date, naive_time)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{julian_day, normalize_degrees, positive_mod, AstronomicalMeasures};
+    use crate::arguments::Arguments;
+    use crate::config::Config;
+    use crate::event::Event;
+    use crate::madhab::Madhab;
+    use crate::method::MethodVariant;
+    use chrono::{NaiveDate, NaiveTime};
+
+    #[test]
+    fn test_positive_mod_handles_negative() {
+        assert!((positive_mod(-10.0, 360.0) - 350.0).abs() < 1e-10);
+        assert!((positive_mod(370.0, 360.0) - 10.0).abs() < 1e-10);
+        assert!(positive_mod(0.0, 360.0).abs() < 1e-10);
+        assert!((positive_mod(-720.0, 360.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_normalize_degrees_in_range() {
+        for input in [-720.0_f64, -370.0, -1.0, 0.0, 1.0, 359.999, 360.0, 720.0] {
+            let normalized = normalize_degrees(input);
+            assert!(
+                (0.0..360.0).contains(&normalized),
+                "input {input} normalized to {normalized} which is outside [0, 360)"
+            );
+        }
+    }
+
+    // The J2000 reference epoch used at calculations/mod.rs is 2_451_545; anchor
+    // against that and two nearby dates so a JDN formula regression is caught.
+    #[test]
+    fn test_julian_day_known_dates() {
+        let j2000 = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+        assert!((julian_day(j2000) - 2_451_545.0).abs() < f64::EPSILON);
+
+        let before = NaiveDate::from_ymd_opt(1999, 12, 31).unwrap();
+        assert!((julian_day(before) - 2_451_544.0).abs() < f64::EPSILON);
+
+        let paris_test_date = NaiveDate::from_ymd_opt(2025, 10, 2).unwrap();
+        assert!((julian_day(paris_test_date) - 2_460_951.0).abs() < f64::EPSILON);
+    }
+
+    fn config_at(lat: f64, lon: f64) -> Config {
+        let args = Arguments {
+            command: None,
+            latitude: Some(lat),
+            longitude: Some(lon),
+            no_geolocation: true,
+            timezone: Some("UTC".to_string()),
+            method: Some(MethodVariant::MWL),
+            madhab: Some(Madhab::Shafi),
+            fajr_mod: None,
+            dhuhr_mod: None,
+            asr_mod: None,
+            maghrib_mod: None,
+            isha_mod: None,
+            notify_before: None,
+            icon: None,
+            urgency: None,
+        };
+        Config::new(&args)
+    }
+
+    // At extreme polar latitudes near solstice, darccos returns NaN because the
+    // sun never reaches the required altitude. The date_time fallback at
+    // calculations/mod.rs should return NaiveTime::MIN on the input date so the
+    // caller's UI has something to display instead of the process crashing.
+    #[test]
+    fn test_date_time_fallback_on_non_finite() {
+        let config = config_at(85.0, 0.0);
+        let date = NaiveDate::from_ymd_opt(2024, 12, 21).unwrap();
+        let measures = AstronomicalMeasures::new(date, &config);
+
+        let fajr = measures.date_time(Event::Fajr);
+        assert_eq!(fajr.date(), date);
+        assert_eq!(fajr.time(), NaiveTime::MIN);
+    }
+
+    // For a normal config, every event's date_time must be a valid NaiveDateTime
+    // (no panics from the seconds clamp / day-shift arithmetic).
+    #[test]
+    fn test_date_time_finite_for_normal_config() {
+        let config = config_at(48.8566, 2.3522);
+        let date = NaiveDate::from_ymd_opt(2025, 6, 15).unwrap();
+        let measures = AstronomicalMeasures::new(date, &config);
+
+        for event in [
+            Event::Fajr,
+            Event::Sunrise,
+            Event::Dhuhr,
+            Event::Asr,
+            Event::Sunset,
+            Event::Maghrib,
+            Event::Isha,
+            Event::Midnight,
+        ] {
+            let dt = measures.date_time(event);
+            let offset = dt.signed_duration_since(date.and_time(NaiveTime::MIN));
+            assert!(
+                offset.num_hours().abs() < 48,
+                "event {event} produced out-of-range datetime {dt}"
+            );
+        }
     }
 }
