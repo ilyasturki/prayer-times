@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.1] - 2026-04-17
 
+### Added
+
+- Re-enabled the `dry-run` command.
+- Partial config files now load cleanly, with missing fields falling back to defaults.
+
+### Changed
+
+- Breaking: upgraded `confy`, `strum`, `strum_macros`, and `toml` to new major versions.
+- Upgraded `chrono`, `clap`, `notify-rust`, `serde`, and `time` to the latest compatible versions.
+- Retired the manual PKGBUILD in favour of documented install channels (AUR, crates.io, Nix).
+- Removed the `justfile` and its `run` recipe.
+
+### Fixed
+
+- Invalid notification icons are skipped instead of aborting the notification.
+- Timezone offset now uses the prayer date rather than the current date.
+
 ## [0.4.0] - 2025-10-15
 
 ### Added
