@@ -71,7 +71,7 @@ pub struct Arguments {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Start the process that will send notifications on prayers time [default]
+    /// Start the process that will send notifications on prayers time \[default\]
     Daemon(DaemonArgs),
     /// Get the previous prayer
     Previous,
