@@ -16,7 +16,6 @@ use self::{
     madhab::Madhab, notification::notify_prayer,
 };
 
-// TODO Use argument::parse() inside the argument module so we don't include this
 use clap::Parser;
 use daemon::run_daemon;
 use method::MethodVariant;
@@ -84,7 +83,8 @@ fn main() {
                     println!("Config file: {}", path.display());
                 }
                 Err(e) => {
-                    println!("Error reading config file: {}", e);
+                    eprintln!("Error reading config file: {}", e);
+                    std::process::exit(1);
                 }
             }
         }

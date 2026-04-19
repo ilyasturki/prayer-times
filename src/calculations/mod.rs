@@ -152,22 +152,29 @@ impl AstronomicalMeasures {
     pub fn date_time(&self, event: Event) -> NaiveDateTime {
         let time = self.raw_time(event);
 
+        // darccos/darcsin return NaN at extreme latitudes where the sun doesn't
+        // reach the required altitude. Fall back to midnight so the program
+        // keeps running; the caller's UI will still display the affected event.
+        if !time.is_finite() {
+            return NaiveDateTime::new(self.date(), NaiveTime::MIN);
+        }
+
+        let seconds = (time.rem_euclid(24.) * 3600.).clamp(0.0, 86_399.0) as u32;
         let naive_time =
-            NaiveTime::from_num_seconds_from_midnight_opt((time.rem_euclid(24.) * 3600.) as u32, 0);
+            NaiveTime::from_num_seconds_from_midnight_opt(seconds, 0).unwrap_or(NaiveTime::MIN);
 
         let time_shift = (time / 24.).floor();
         let date = if time_shift >= 1. {
             self.date()
                 .checked_add_days(Days::new(time_shift as u64))
-                .unwrap()
+                .unwrap_or_else(|| self.date())
         } else if time_shift < 0. {
             self.date()
                 .checked_sub_days(Days::new(-time_shift as u64))
-                .unwrap()
+                .unwrap_or_else(|| self.date())
         } else {
             self.date()
         };
-        // TODO: do not have an expect here
-        NaiveDateTime::new(date, naive_time.expect("Error in prayer calculation"))
+        NaiveDateTime::new(date, naive_time)
     }
 }

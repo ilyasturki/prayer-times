@@ -15,11 +15,10 @@ fn send_notification(summary: String, urgency: Urgency, icon: PathBuf) {
 
     match notification.show() {
         Ok(_) => println!("Notification sent"),
-        Err(_) => println!("Failed to send notification"),
+        Err(err) => eprintln!("Failed to send notification: {err}"),
     }
 }
 
-// TODO on a pas besoin de Prayer mais juste du string
 pub fn notify_prayer(prayer: &Prayer, config: &Config) {
     let summary = format!("Adhan {}", prayer.event());
     send_notification(summary, config.urgency(), config.icon());

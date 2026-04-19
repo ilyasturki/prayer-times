@@ -60,12 +60,13 @@ impl Config {
     pub fn new(args: &Arguments) -> Self {
         // println!("{:?}", args);
 
-        // TODO: get prayer-times from
         let (program, config) = config_options();
         let config_res = confy::load::<Config>(program, config);
         if let Err(error) = &config_res {
-            eprintln!("Error reading config file : {}", error);
-            eprintln!("Caused by: {}", error.source().unwrap());
+            eprintln!("Error reading config file: {}", error);
+            if let Some(source) = error.source() {
+                eprintln!("Caused by: {}", source);
+            }
         }
         let config: Config = config_res.unwrap_or_default();
 
@@ -79,7 +80,7 @@ impl Config {
         }
         if interval == 0 {
             interval = 1;
-            println!("Interval cannot be 0, setting it to 1 the minimum value");
+            eprintln!("Interval cannot be 0, setting it to 1 (the minimum value)");
         }
 
         let location: Location;
@@ -96,6 +97,11 @@ impl Config {
             eprintln!("No location provided in arguments or config file and impossible to get it automatically");
             eprintln!("Run the program using the latitude and longitude arguments or set them in the config file");
             eprintln!("Example : {program} --latitude <LAT> --longitude <LON>");
+            std::process::exit(1);
+        }
+
+        if let Err(err) = validate_location(&location) {
+            eprintln!("Invalid location: {err}");
             std::process::exit(1);
         }
 
@@ -170,7 +176,6 @@ impl Config {
         self.notification.notify_before
     }
     pub fn urgency(&self) -> Urgency {
-        // TODO : why do I need clone here
         self.notification.urgency.clone().into()
     }
     pub fn icon(&self) -> path::PathBuf {
@@ -179,6 +184,22 @@ impl Config {
     pub fn interval(&self) -> u64 {
         self.notification.interval
     }
+}
+
+fn validate_location(location: &Location) -> Result<(), String> {
+    if !location.lat.is_finite() || !(-90.0..=90.0).contains(&location.lat) {
+        return Err(format!(
+            "latitude {} is out of range (expected -90..=90)",
+            location.lat
+        ));
+    }
+    if !location.lon.is_finite() || !(-180.0..=180.0).contains(&location.lon) {
+        return Err(format!(
+            "longitude {} is out of range (expected -180..=180)",
+            location.lon
+        ));
+    }
+    Ok(())
 }
 
 fn parse_timezone_string(tz_str: &str, date: NaiveDate) -> i64 {
