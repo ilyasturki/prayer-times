@@ -63,9 +63,9 @@ impl Config {
         let (program, config) = config_options();
         let config_res = confy::load::<Config>(program, config);
         if let Err(error) = &config_res {
-            eprintln!("Error reading config file: {}", error);
+            eprintln!("Error reading config file: {error}");
             if let Some(source) = error.source() {
-                eprintln!("Caused by: {}", source);
+                eprintln!("Caused by: {source}");
             }
         }
         let config: Config = config_res.unwrap_or_default();
@@ -168,15 +168,13 @@ impl Config {
     pub fn offset(&self, event: Event) -> f64 {
         let minutes_mod = match event {
             Event::Fajr => self.prayer.fajr_mod,
-            Event::Sunrise => 0,
             Event::Dhuhr => self.prayer.dhuhr_mod,
             Event::Asr => self.prayer.asr_mod,
-            Event::Sunset => 0,
             Event::Maghrib => self.prayer.maghrib_mod,
             Event::Isha => self.prayer.isha_mod,
-            Event::Midnight => 0,
+            Event::Sunrise | Event::Sunset | Event::Midnight => 0,
         };
-        minutes_mod as f64 / 60.
+        f64::from(minutes_mod) / 60.
     }
 
     pub fn notify_before(&self) -> bool {
@@ -215,10 +213,7 @@ fn parse_timezone_string(tz_str: &str, date: NaiveDate) -> i64 {
     }
 
     let offset = system_timezone_offset();
-    eprintln!(
-        "Invalid timezone '{}', falling back to system timezone GMT{:+}",
-        tz_str, offset
-    );
+    eprintln!("Invalid timezone '{tz_str}', falling back to system timezone GMT{offset:+}");
     offset
 }
 
@@ -234,7 +229,7 @@ fn system_timezone_offset() -> i64 {
     let local_time = Local::now();
     let offset = local_time.offset().local_minus_utc();
     let offset_hours = offset / 3600;
-    offset_hours as i64
+    i64::from(offset_hours)
 }
 
 // Get the icon of the notification that should be sent

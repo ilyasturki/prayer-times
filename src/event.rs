@@ -13,31 +13,28 @@ pub enum Event {
 }
 impl Event {
     pub fn list() -> [Event; 8] {
-        use Event::*;
+        use Event::{Asr, Dhuhr, Fajr, Isha, Maghrib, Midnight, Sunrise, Sunset};
         [Fajr, Sunrise, Dhuhr, Asr, Sunset, Maghrib, Isha, Midnight]
     }
     pub fn previous(&self) -> Self {
-        use Event::*;
+        use Event::{Asr, Dhuhr, Fajr, Isha, Maghrib, Midnight, Sunrise, Sunset};
         match self {
-            Fajr => Isha,
             Sunrise => Fajr,
             Dhuhr => Sunrise,
             Asr => Dhuhr,
-            Sunset => Asr,
-            Maghrib => Asr,
+            Sunset | Maghrib => Asr,
             Isha => Maghrib,
-            Midnight => Isha,
+            Fajr | Midnight => Isha,
         }
     }
     pub fn next(&self) -> Event {
-        use Event::*;
+        use Event::{Asr, Dhuhr, Fajr, Isha, Maghrib, Midnight, Sunrise, Sunset};
         match self {
             Fajr => Sunrise,
             Sunrise => Dhuhr,
             Dhuhr => Asr,
             Asr => Maghrib,
-            Sunset => Isha,
-            Maghrib => Isha,
+            Sunset | Maghrib => Isha,
             Isha => Midnight,
             Midnight => Fajr,
         }

@@ -28,7 +28,7 @@ fn generate_shell_completions(mut cmd: Command) {
 
     let result_dir = create_dir_all(&comp_dir);
     if let Err(e) = result_dir {
-        eprintln!("Failed to create completions directory: {}", e);
+        eprintln!("Failed to create completions directory: {e}");
     }
 
     for shell in [Bash, Fish, Zsh] {
@@ -42,7 +42,7 @@ fn generate_shell_completions(mut cmd: Command) {
                 );
             }
             Err(e) => {
-                eprintln!("Failed to generate shell completion: {}", e);
+                eprintln!("Failed to generate shell completion: {e}");
             }
         }
     }

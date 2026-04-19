@@ -32,7 +32,7 @@ fn julian_day(date: NaiveDate) -> f64 {
     let c = 367 * (month - 2 - 12 * a);
     let e = (year + 4900 + a) / 100;
 
-    (b / 4 + c / 12 - 3 * e / 4 + day - 32075) as f64
+    f64::from(b / 4 + c / 12 - 3 * e / 4 + day - 32075)
 }
 
 #[derive(Clone)]
@@ -54,12 +54,12 @@ impl AstronomicalMeasures {
         let (declination_of_sun, equation_of_time) = {
             let julian_day = julian_day(date);
 
-            let d = julian_day - 2451545.0;
+            let d = julian_day - 2_451_545.0;
 
-            let g = normalize_degrees(357.529 + 0.98560028 * d);
-            let q = normalize_degrees(280.459 + 0.98564736 * d);
+            let g = normalize_degrees(357.529 + 0.985_600_28 * d);
+            let q = normalize_degrees(280.459 + 0.985_647_36 * d);
             let l = normalize_degrees(q + 1.915 * math::dsin(g) + 0.020 * math::dsin(2. * g));
-            let e = 23.439 - 0.00000036 * d;
+            let e = 23.439 - 0.000_000_36 * d;
             let ra = math::darctan2(math::dcos(e) * math::dsin(l), math::dcos(l)) / 15.;
 
             let declination_of_sun = math::darcsin(math::dsin(e) * math::dsin(l));
@@ -85,7 +85,7 @@ impl AstronomicalMeasures {
         };
         // https://praytimes.org/calculation#asr
         let asr = {
-            let t = config.shadow_multiplier() as f64;
+            let t = f64::from(config.shadow_multiplier());
             let i = math::darccot(t + math::dtan((config.lat() - declination_of_sun).abs()));
             // let i = math::darccot(t + math::dtan(config.lat() - declination_of_sun));
             let a = math::dsin(i) - math::dsin(config.lat()) * math::dsin(declination_of_sun);
@@ -107,14 +107,14 @@ impl AstronomicalMeasures {
             let fajr_param = config.fajr_param();
             match fajr_param {
                 ParamValue::Angle(angle) => dhuhr - solar_hour_angle(angle),
-                ParamValue::Minutes(minutes) => dhuhr - minutes as f64 / 60.,
+                ParamValue::Minutes(minutes) => dhuhr - f64::from(minutes) / 60.,
             }
         };
         let isha = {
             let isha_param = config.isha_param();
             match isha_param {
                 ParamValue::Angle(angle) => dhuhr + solar_hour_angle(angle),
-                ParamValue::Minutes(minutes) => sunset + minutes as f64 / 60.,
+                ParamValue::Minutes(minutes) => sunset + f64::from(minutes) / 60.,
             }
         };
 

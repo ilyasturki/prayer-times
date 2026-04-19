@@ -21,7 +21,7 @@ impl Madhab {
 
     pub fn list_all() {
         for variant in Self::iter() {
-            println!("{}", variant);
+            println!("{variant}");
         }
     }
 }

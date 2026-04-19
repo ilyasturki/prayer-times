@@ -262,12 +262,12 @@ impl MethodVariant {
         for variant in MethodVariant::iter() {
             let method = variant.get();
             let fajr_str = match method.params.fajr {
-                ParamValue::Angle(a) => format!("{}°", a),
-                ParamValue::Minutes(m) => format!("{} min", m),
+                ParamValue::Angle(a) => format!("{a}°"),
+                ParamValue::Minutes(m) => format!("{m} min"),
             };
             let isha_str = match method.params.isha {
-                ParamValue::Angle(a) => format!("{}°", a),
-                ParamValue::Minutes(m) => format!("{} min", m),
+                ParamValue::Angle(a) => format!("{a}°"),
+                ParamValue::Minutes(m) => format!("{m} min"),
             };
             println!(
                 "{} : [ fajr: {}, isha: {} ]",

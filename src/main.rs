@@ -83,7 +83,7 @@ fn main() {
                     println!("Config file: {}", path.display());
                 }
                 Err(e) => {
-                    eprintln!("Error reading config file: {}", e);
+                    eprintln!("Error reading config file: {e}");
                     std::process::exit(1);
                 }
             }
