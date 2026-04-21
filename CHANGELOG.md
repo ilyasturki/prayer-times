@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- AUR `prayer-times` package now declares `rust` (not `cargo`) as the sole Rust `makedepends`, so clean-chroot builds no longer pull in `rustup` and fail with "could not choose a version of rustc".
+
 ## [0.4.3] - 2026-04-21
 
 ### Added
