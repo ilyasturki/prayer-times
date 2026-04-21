@@ -190,6 +190,15 @@ jobs:
 
                   sed -i "s/\${VERSION}/${version}/g" PKGBUILD
 
+            - name: Validate PKGBUILD builds in clean Arch container
+              run: |
+                  docker run --rm -v "$PWD:/build" -w /build archlinux:base-devel bash -c '
+                      pacman -Syu --noconfirm &&
+                      useradd -m builder &&
+                      chown -R builder:builder /build &&
+                      sudo -u builder makepkg --syncdeps --noconfirm --nocheck
+                  '
+
             - name: Publish to AUR
               uses: KSXGitHub/github-actions-deploy-aur@v4.1.2
               with:
