@@ -1,0 +1,14 @@
+[Unit]
+Description=Islamic prayer times notifications
+Documentation=https://github.com/Yasso9/prayer-times
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/prayer-times daemon
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=default.target

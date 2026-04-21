@@ -70,10 +70,8 @@ impl Config {
         }
         let config: Config = config_res.unwrap_or_default();
 
-        let mut is_daemon = false;
         let mut interval = config.notification.interval;
         if let Some(Commands::Daemon(daemon)) = &args.command {
-            is_daemon = true;
             if let Some(daemon_interval) = daemon.interval {
                 interval = daemon_interval;
             }
@@ -92,7 +90,7 @@ impl Config {
         } else if let Some(cfg_location) = config.location {
             location = cfg_location;
         } else if !args.no_geolocation {
-            if let Some(auto_location) = current_location(is_daemon) {
+            if let Some(auto_location) = current_location() {
                 location = auto_location;
             } else {
                 eprintln!("No location provided in arguments or config file and impossible to get it automatically");

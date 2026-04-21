@@ -14,7 +14,7 @@ fn send_notification(summary: String, urgency: Urgency, icon: PathBuf) {
     }
 
     match notification.show() {
-        Ok(_) => println!("Notification sent"),
+        Ok(_) => log::info!("Notification sent"),
         Err(err) => eprintln!("Failed to send notification: {err}"),
     }
 }

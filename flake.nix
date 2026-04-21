@@ -42,6 +42,9 @@
               install -Dm644 assets/mosque-svgrepo-com.png \
                 $out/share/icons/hicolor/128x128/apps/prayer-times.png
 
+              install -Dm644 contrib/prayer-times.service \
+                $out/share/systemd/user/prayer-times.service
+
               # generate-shell writes to env!(CARGO_MANIFEST_DIR)/target/completions
               # which is the build directory at compile time (still writable here).
               $out/bin/prayer-times generate-shell
@@ -89,5 +92,39 @@
       overlays.default = _final: prev: {
         prayer-times = self.packages.${prev.system}.prayer-times;
       };
+
+      nixosModules.default =
+        { config, lib, pkgs, ... }:
+        let
+          cfg = config.services.prayer-times;
+        in
+        {
+          options.services.prayer-times = {
+            enable = lib.mkEnableOption "prayer-times user service";
+            package = lib.mkOption {
+              type = lib.types.package;
+              default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+              defaultText = lib.literalExpression
+                "prayer-times.packages.\${system}.default";
+              description = "The prayer-times package to use.";
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            systemd.user.services.prayer-times = {
+              description = "Islamic prayer times notifications";
+              after = [ "graphical-session.target" ];
+              partOf = [ "graphical-session.target" ];
+              wantedBy = [ "default.target" ];
+              environment.RUST_LOG = "info";
+              serviceConfig = {
+                Type = "simple";
+                ExecStart = "${cfg.package}/bin/prayer-times daemon";
+                Restart = "on-failure";
+                RestartSec = 10;
+              };
+            };
+          };
+        };
     };
 }

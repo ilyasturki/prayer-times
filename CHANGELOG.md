@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- systemd user unit (`contrib/prayer-times.service`) shipped via the AUR packages and the Nix flake's `postInstall`.
+- NixOS module exposed as `nixosModules.default` with a `services.prayer-times.enable` option.
+
+### Changed
+
+- Daemon output now flows through the `log` crate; per-tick lines are demoted to `debug`. Set `RUST_LOG=debug` to restore the previous verbosity.
+- Auto-detected location is logged once at `info` level instead of being printed only during the daemon command.
+
 ## [0.4.2] - 2026-04-19
 
 ### Added

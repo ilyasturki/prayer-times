@@ -24,6 +24,11 @@ use daemon::run_daemon;
 use method::MethodVariant;
 
 fn main() {
+    env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("prayer_times=info"),
+    )
+    .init();
+
     let args = Arguments::parse();
 
     let default = Commands::default();

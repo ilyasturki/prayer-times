@@ -179,6 +179,8 @@ jobs:
 
                       install -Dm644 "assets/mosque-svgrepo-com.png" \
                           "${pkgdir}/usr/share/icons/hicolor/128x128/apps/${pkgname}.png"
+                      install -Dm644 "contrib/${pkgname}.service" \
+                          "${pkgdir}/usr/lib/systemd/user/${pkgname}.service"
                       install -Dm644 "README.md" \
                           "${pkgdir}/usr/share/doc/${pkgname}/README.md"
                       install -Dm644 "LICENSE" \
@@ -236,10 +238,11 @@ jobs:
                       "${_pkgname}.bash-${pkgver}::${url}/releases/download/v${pkgver}/prayer-times.bash"
                       "_${_pkgname}-${pkgver}::${url}/releases/download/v${pkgver}/_prayer-times"
                       "${_pkgname}.fish-${pkgver}::${url}/releases/download/v${pkgver}/prayer-times.fish"
+                      "${_pkgname}.service-${pkgver}::${url}/raw/v${pkgver}/contrib/${_pkgname}.service"
                   )
                   source_x86_64=("${pkgname}-${pkgver}-x86_64::${url}/releases/download/v${pkgver}/prayer-times-linux-x64")
                   source_aarch64=("${pkgname}-${pkgver}-aarch64::${url}/releases/download/v${pkgver}/prayer-times-linux-arm64")
-                  sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+                  sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
                   sha256sums_x86_64=('${X64_SHA}')
                   sha256sums_aarch64=('${ARM64_SHA}')
 
@@ -252,6 +255,9 @@ jobs:
                           "${pkgdir}/usr/share/zsh/site-functions/_${_pkgname}"
                       install -Dm644 "${_pkgname}.fish-${pkgver}" \
                           "${pkgdir}/usr/share/fish/vendor_completions.d/${_pkgname}.fish"
+
+                      install -Dm644 "${_pkgname}.service-${pkgver}" \
+                          "${pkgdir}/usr/lib/systemd/user/${_pkgname}.service"
 
                       install -Dm644 "LICENSE-${pkgver}" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
                       install -Dm644 "README-${pkgver}.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"

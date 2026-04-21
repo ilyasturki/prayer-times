@@ -36,6 +36,10 @@ Add the flake input to your NixOS configuration:
     # Option 2: Use the overlay
     nixpkgs.overlays = [ prayer-times.overlays.default ];
     environment.systemPackages = [ pkgs.prayer-times ];
+
+    # Option 3: Enable the user service via the NixOS module
+    imports = [ prayer-times.nixosModules.default ];
+    services.prayer-times.enable = true;
   };
 }
 ```
@@ -111,6 +115,20 @@ A few subcommands accept their own options:
 
 - `daemon -i, --interval <SECONDS>` — polling interval used by the background loop (overrides `notification.interval` in the config; defaults to the config value).
 - `prayers -d, --date <YYYY-MM-DD>` — list prayer times for a specific date instead of today.
+
+### Running as a systemd service
+
+The AUR packages and the Nix flake install a user unit at `/usr/lib/systemd/user/prayer-times.service` (or `share/systemd/user/` under the Nix store). Enable it with:
+
+```sh
+systemctl --user daemon-reload
+systemctl --user enable --now prayer-times.service
+journalctl --user -u prayer-times -f
+```
+
+NixOS users can skip the manual `systemctl` call by setting `services.prayer-times.enable = true;` after importing `prayer-times.nixosModules.default`.
+
+Daemon output uses the `log` crate. The default level is `info`; per-tick chatter (next-prayer countdown, sleep notice) sits at `debug`. Override with `RUST_LOG=debug` (or `warn`, etc.).
 
 You can also configure the program from a config file located at `$XDG_CONFIG_HOME/prayer-times/config.toml` (usually `~/.config/prayer-times/config.toml`). Here is the default config:
 

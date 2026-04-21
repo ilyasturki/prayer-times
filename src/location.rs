@@ -11,7 +11,6 @@ fn public_ip() -> Option<String> {
     let mut ip = None;
     // List all of the machine's network interfaces
     for iface in get_if_addrs::get_if_addrs().ok()? {
-        // println!("IP Found : {:#?}", iface.ip());
         if iface.is_loopback() {
             continue;
         }
@@ -19,31 +18,26 @@ fn public_ip() -> Option<String> {
         if ip_addr.starts_with("192.168") {
             continue;
         }
-        // println!("IP : {:#?}", iface.ip());
         ip = Some(ip_addr);
-        // println!("IP : {:#?}", iface.type_id());
-        // println!("{:#?}", iface.is_loopback());
     }
 
     ip
 }
 
-pub fn current_location(print: bool) -> Option<Location> {
+pub fn current_location() -> Option<Location> {
     let info = geolocation::find(public_ip()?.as_str()).ok()?;
-    let lat: Result<f64, _> = info.latitude.parse();
-    let lon: Result<f64, _> = info.longitude.parse();
+    let location = Location {
+        lat: info.latitude.parse().ok()?,
+        lon: info.longitude.parse().ok()?,
+    };
 
-    if print {
-        println!("Location automatically detected:");
-        println!("Latitude: {}", info.latitude);
-        println!("Longitude: {}", info.longitude);
-        println!("City: {}", info.city);
-        println!("Country: {}", info.country);
-        println!("\n");
-    }
+    log::info!(
+        "Location auto-detected: lat={}, lon={}, city={}, country={}",
+        location.lat,
+        location.lon,
+        info.city,
+        info.country,
+    );
 
-    Some(Location {
-        lat: lat.ok()?,
-        lon: lon.ok()?,
-    })
+    Some(location)
 }

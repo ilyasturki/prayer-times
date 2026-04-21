@@ -26,9 +26,9 @@ impl<'a> PrayerDaemon<'a> {
     }
 
     pub fn run(&mut self) {
-        println!("Starting Prayer Times Background Process");
+        log::info!("Starting Prayer Times Background Process");
         loop {
-            self.print_info();
+            self.log_info();
 
             if self.next_prayer.time_has_passed() {
                 self.handle_passed_prayer();
@@ -40,13 +40,13 @@ impl<'a> PrayerDaemon<'a> {
         }
     }
 
-    fn print_info(&self) {
-        println!("{}", self.next_prayer.text_duration());
-        println!("{}", self.next_prayer.text_time());
+    fn log_info(&self) {
+        log::debug!("{}", self.next_prayer.text_duration());
+        log::debug!("{}", self.next_prayer.text_time());
     }
 
     fn handle_passed_prayer(&mut self) {
-        println!("Prayer time has passed");
+        log::info!("Prayer time has passed");
         // Notification only if it's the current prayer.
         // If it's not the current prayer, it means that the system have been suspended
         // so we are currently in an other prayer
@@ -76,7 +76,7 @@ impl<'a> PrayerDaemon<'a> {
     }
 
     fn sleep(&self) {
-        println!("Next check in {} seconds", self.config.interval());
+        log::debug!("Next check in {} seconds", self.config.interval());
         std::thread::sleep(std::time::Duration::from_secs(self.config.interval()));
     }
 }
