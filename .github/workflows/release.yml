@@ -39,6 +39,13 @@ jobs:
             - name: Build release binary
               run: cargo build --release --locked --target ${{ matrix.target }}
 
+            - name: Smoke test
+              run: |
+                  bin=target/${{ matrix.target }}/release/prayer-times
+                  test "$($bin --version)" = "prayer-times ${GITHUB_REF_NAME#v}"
+                  $bin --no-geolocation --latitude 48.8566 --longitude 2.3522 --timezone Europe/Paris --method FRANCE prayers --date 2026-01-01 > "$RUNNER_TEMP/prayers.txt"
+                  grep -q '^Fajr at ' "$RUNNER_TEMP/prayers.txt"
+
             - name: Rename binary
               run: cp target/${{ matrix.target }}/release/prayer-times ${{ matrix.asset }}
 
