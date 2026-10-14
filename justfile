@@ -18,8 +18,3 @@ build-nix:
 
 run-nix:
     nix run
-
-# Usage: just release patch      (or: minor / major / 0.4.1)
-release level:
-    claude -p "/changelog for a {{ level }} release"
-    cargo release {{ level }} --execute
