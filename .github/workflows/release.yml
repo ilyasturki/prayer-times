@@ -14,7 +14,7 @@ jobs:
             matrix:
                 include:
                     - target: x86_64-unknown-linux-gnu
-                      runner: ubuntu-latest
+                      runner: ubuntu-26.04
                       asset: prayer-times-linux-x64
                     - target: aarch64-unknown-linux-gnu
                       runner: ubuntu-24.04-arm
@@ -72,7 +72,7 @@ jobs:
 
     crates-io:
         needs: build
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-26.04
         steps:
             - uses: actions/checkout@v6
 
@@ -89,7 +89,7 @@ jobs:
 
     github-release:
         needs: build
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-26.04
         steps:
             - uses: actions/checkout@v6
 
@@ -129,7 +129,7 @@ jobs:
 
     aur:
         needs: github-release
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-26.04
         steps:
             - name: Generate PKGBUILD
               run: |
@@ -219,7 +219,7 @@ jobs:
 
     aur-bin:
         needs: github-release
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-26.04
         steps:
             - name: Download binaries
               uses: actions/download-artifact@v8
