@@ -12,17 +12,17 @@ keywords = ["prayer", "islam", "adhan", "salah", "notification"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-chrono = "0.4.44"
+chrono = "0.4.45"
 chrono-tz = "0.10.4"
-clap = { version = "4.6.0", features = ["derive"] }
-clap_complete = "4.6.0"
+clap = { version = "4.6.10", features = ["derive"] }
+clap_complete = "4.6.12"
 confy = "2.0.0"
-env_logger = "0.11.8"
-geolocation = "0.2.1"
-get_if_addrs = "0.5.3"
-log = "0.4.28"
-notify-rust = "4.14.0"
-serde = "1.0.228"
+env_logger = "0.11.12"
+log = "0.4.35"
+notify-rust = "4.19.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
 strum = "0.28.0"
 strum_macros = "0.28.0"
-toml = "1.1.2"
+toml = "1.2.3"
+ureq = { version = "3.5.2", default-features = false }

@@ -56,7 +56,7 @@ nix run github:Yasso9/prayer-times
 cargo install prayer-times
 ```
 
-Requires `pkg-config` and `libssl-dev` (or your distribution's equivalents) at build time. A running D-Bus session bus is needed at runtime to deliver desktop notifications (usually provided by your desktop environment).
+No system libraries are needed at build time. A running D-Bus session bus is needed at runtime to deliver desktop notifications (usually provided by your desktop environment).
 
 ### Pre-built binary
 
@@ -145,7 +145,7 @@ isha_mod = 0
 [notification]
 notify_before = false
 urgency = "Critical"
-icon = "/usr/share/icons/mosque-svgrepo-com.png"
+icon = "prayer-times"
 interval = 20
 ```
 
@@ -163,7 +163,7 @@ lon = 2.3522
 
 If you specify CLI arguments, they take precedence over what you have in your config. If you don't specify any latitude and longitude, they will be inferred from your IP address. IP-based location is not very accurate, so specifying your own latitude and longitude is recommended for more accurate prayer times. CLI flags use `--latitude` and `--longitude`.
 
-> **Privacy note:** When no location is configured, the program picks a non-loopback IP from your network interfaces and sends it to a third-party geolocation service on every launch. If you'd rather not make that request, set a location explicitly or pass `--no-geolocation` to disable the fallback.
+> **Privacy note:** When no location is configured, the program asks [ip-api.com](https://ip-api.com) over plain HTTP to locate your public IP address on every launch. If you'd rather not make that request, set a location explicitly or pass `--no-geolocation` to disable the fallback.
 
 ## Examples
 

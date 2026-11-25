@@ -28,16 +28,6 @@
             src = pkgs.lib.cleanSource ./.;
             cargoLock.lockFile = ./Cargo.lock;
 
-            nativeBuildInputs = with pkgs; [ pkg-config ];
-            buildInputs = with pkgs; [
-              openssl
-              dbus
-            ];
-
-            # config::tests::test_config_from_str asserts a debug-mode asset
-            # path; it only passes in debug builds.
-            checkFlags = [ "--skip=config::tests::test_config_from_str" ];
-
             postInstall = ''
               install -Dm644 assets/mosque-svgrepo-com.png \
                 $out/share/icons/hicolor/128x128/apps/prayer-times.png

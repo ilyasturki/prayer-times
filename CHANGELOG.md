@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Builds no longer fail against OpenSSL 4: the program no longer links OpenSSL (nor libdbus) at all, so the AUR package builds again on current Arch.
+- IP-based geolocation now locates the machine's public address; it used to send a local interface address, which failed behind NAT.
+- `next` and the daemon no longer jump a full day after Isha: Midnight is reported for the same night, and the daemon no longer skips the following day's prayers.
+- The daemon now notifies Maghrib instead of waiting on Sunset, which shares its time.
+- Timezones with a fractional UTC offset (e.g. `Asia/Kolkata`, `Asia/Tehran`) are no longer truncated to the hour, which shifted every prayer by up to 45 minutes.
+- Countdowns and `current`/`next` use the configured timezone's clock, and dates outside the current DST period use their own offset when no timezone is set.
+- The default notification icon now resolves for packaged installs, through the `prayer-times` theme icon.
+- The release test suite passes, so the AUR and Nix packages run every test.
+
+### Changed
+
+- Dependencies updated; `geolocation` and `get_if_addrs` replaced by `ureq` without TLS.
+
 ## [0.4.4] - 2026-04-21
 
 ### Fixed
