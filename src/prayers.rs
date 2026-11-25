@@ -90,6 +90,42 @@ mod tests {
         );
     }
 
+    // The daemon notifies a prayer once it passes and current() resolves to it.
+    #[test]
+    fn test_daemon_gate_matches_each_passed_prayer() {
+        for (config, date) in [
+            (
+                paris_config(),
+                NaiveDate::from_ymd_opt(2025, 10, 2).unwrap(),
+            ),
+            (
+                paris_config_with_modifications(),
+                NaiveDate::from_ymd_opt(2024, 8, 10).unwrap(),
+            ),
+        ] {
+            for event in [
+                Event::Fajr,
+                Event::Sunrise,
+                Event::Dhuhr,
+                Event::Asr,
+                Event::Maghrib,
+                Event::Isha,
+            ] {
+                let prayer = Prayer::new(event, date, &config);
+                let before = prayer.date_time() - chrono::Duration::seconds(1);
+                let after = prayer.date_time() + chrono::Duration::seconds(1);
+                assert!(
+                    next_after(&config, before) == prayer,
+                    "{event} should be next"
+                );
+                assert!(
+                    next_after(&config, after).previous() == prayer,
+                    "{event} should be current once passed"
+                );
+            }
+        }
+    }
+
     // Paris 2025-10-02: Sunset and Maghrib both at 19:27.
     #[test]
     fn test_next_before_sunset_is_maghrib() {
