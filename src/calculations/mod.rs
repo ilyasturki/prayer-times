@@ -78,7 +78,7 @@ impl AstronomicalMeasures {
 
         // https://praytimes.org/calculation#dhuhr
         let dhuhr = {
-            let a = 12. + config.timezone_offset(date) as f64;
+            let a = 12. + config.timezone_offset(date);
             let b = config.lon() / 15.;
             let c = equation_of_time;
             a - b - c
@@ -240,7 +240,7 @@ mod tests {
             icon: None,
             urgency: None,
         };
-        Config::new(&args)
+        Config::merge(&args, Config::default())
     }
 
     // At extreme polar latitudes near solstice, darccos returns NaN because the

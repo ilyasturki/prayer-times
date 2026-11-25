@@ -36,7 +36,7 @@ pub fn build(f: Fixture) -> Config {
         icon: None,
         urgency: None,
     };
-    Config::new(&args)
+    Config::merge(&args, Config::default())
 }
 
 pub fn simple(
@@ -107,6 +107,16 @@ pub fn medina_config() -> Config {
         "Asia/Riyadh",
         MethodVariant::MAKKAH,
         Madhab::Hanafi,
+    )
+}
+
+pub fn delhi_config() -> Config {
+    simple(
+        28.6139,
+        77.2090,
+        "Asia/Kolkata",
+        MethodVariant::KARACHI,
+        Madhab::Shafi,
     )
 }
 

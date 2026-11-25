@@ -8,9 +8,7 @@ use crate::madhab::Madhab;
 use crate::method::{MethodVariant, ParamValue};
 use crate::notification_urgency::NotifUrgency;
 use crate::Arguments;
-use chrono::Local;
-use chrono::{NaiveDate, NaiveTime, TimeZone};
-use chrono_tz::OffsetComponents;
+use chrono::{Local, NaiveDate, NaiveDateTime, NaiveTime, Offset, TimeZone, Utc};
 use notify_rust::Urgency;
 use serde::Deserialize;
 use serde::Serialize;
@@ -68,7 +66,12 @@ impl Config {
                 eprintln!("Caused by: {source}");
             }
         }
-        let config: Config = config_res.unwrap_or_default();
+        Self::merge(args, config_res.unwrap_or_default())
+    }
+
+    // Layer command line arguments over a config read from file
+    pub(crate) fn merge(args: &Arguments, config: Config) -> Self {
+        let program = env!("CARGO_PKG_NAME");
 
         let mut interval = config.notification.interval;
         if let Some(Commands::Daemon(daemon)) = &args.command {
@@ -110,9 +113,16 @@ impl Config {
             std::process::exit(1);
         }
 
+        let timezone = args.timezone.clone().or(config.timezone);
+        if let Some(tz_str) = &timezone {
+            if tz_str.parse::<chrono_tz::Tz>().is_err() {
+                eprintln!("Invalid timezone '{tz_str}', falling back to the system timezone");
+            }
+        }
+
         Self {
             location: Some(location),
-            timezone: args.timezone.clone().or(config.timezone),
+            timezone,
             prayer: PrayerConfig {
                 method: args.method.unwrap_or(config.prayer.method),
                 madhab: args.madhab.clone().unwrap_or(config.prayer.madhab),
@@ -146,10 +156,23 @@ impl Config {
         0.
     }
 
-    pub fn timezone_offset(&self, date: NaiveDate) -> i64 {
-        match &self.timezone {
-            Some(tz_str) => parse_timezone_string(tz_str, date),
-            None => system_timezone_offset(),
+    fn tz(&self) -> Option<chrono_tz::Tz> {
+        self.timezone.as_deref()?.parse().ok()
+    }
+
+    // UTC offset in hours, fractional for zones like Asia/Kolkata (+05:30)
+    pub fn timezone_offset(&self, date: NaiveDate) -> f64 {
+        match self.tz() {
+            Some(tz) => utc_offset_hours(&tz, date),
+            None => utc_offset_hours(&Local, date),
+        }
+    }
+
+    // Wall-clock time in the configured timezone, the frame prayer times are computed in
+    pub fn now(&self) -> NaiveDateTime {
+        match self.tz() {
+            Some(tz) => Utc::now().with_timezone(&tz).naive_local(),
+            None => Local::now().naive_local(),
         }
     }
 
@@ -205,40 +228,24 @@ pub(crate) fn validate_location(location: &Location) -> Result<(), String> {
     Ok(())
 }
 
-pub(crate) fn parse_timezone_string(tz_str: &str, date: NaiveDate) -> i64 {
-    if let Ok(tz) = tz_str.parse::<chrono_tz::Tz>() {
-        return timezone_to_offset(tz, date);
-    }
-
-    let offset = system_timezone_offset();
-    eprintln!("Invalid timezone '{tz_str}', falling back to system timezone GMT{offset:+}");
-    offset
+pub(crate) fn utc_offset_hours<Tz: TimeZone>(timezone: &Tz, date: NaiveDate) -> f64 {
+    let noon = date.and_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap_or(NaiveTime::MIN));
+    let seconds = timezone
+        .offset_from_local_datetime(&noon)
+        .earliest()
+        .map_or(0, |offset| offset.fix().local_minus_utc());
+    f64::from(seconds) / 3600.
 }
 
-pub(crate) fn timezone_to_offset(timezone: chrono_tz::Tz, date: NaiveDate) -> i64 {
-    let noon = date.and_time(NaiveTime::from_hms_opt(12, 0, 0).unwrap());
-    let local_time = timezone.from_local_datetime(&noon).unwrap();
-    let offset = local_time.offset();
-    let total_offset = offset.base_utc_offset() + offset.dst_offset();
-    total_offset.num_hours()
-}
+// Packages install the icon into the hicolor theme under this name
+const ICON_NAME: &str = "prayer-times";
 
-pub(crate) fn system_timezone_offset() -> i64 {
-    let local_time = Local::now();
-    let offset = local_time.offset().local_minus_utc();
-    let offset_hours = offset / 3600;
-    i64::from(offset_hours)
-}
-
-// Get the icon of the notification that should be sent
 fn default_icon() -> path::PathBuf {
-    let assets_path = if cfg!(debug_assertions) {
-        path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets")
+    if cfg!(debug_assertions) {
+        path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/mosque-svgrepo-com.png")
     } else {
-        path::PathBuf::from("/usr/share/icons")
-    };
-
-    assets_path.join("mosque-svgrepo-com.png")
+        path::PathBuf::from(ICON_NAME)
+    }
 }
 
 pub fn config_options<'a>() -> (&'a str, &'a str) {
@@ -255,10 +262,11 @@ mod tests {
     #[test]
     fn test_config_from_str() {
         let config_str = r#"
+        timezone = "Europe/Paris"
+
         [location]
         lat = 48.8566
         lon = 2.3522
-        timezone = "Europe/Paris"
 
         [prayer]
         method = "KARACHI"
@@ -278,7 +286,18 @@ mod tests {
         assert_eq!(config.offset(Event::Asr), 0.0);
         assert_eq!(config.offset(Event::Maghrib), 0.0);
         assert_eq!(config.offset(Event::Isha), 0.0);
-        assert!(config.icon().ends_with("assets/mosque-svgrepo-com.png"));
+        assert_eq!(config.timezone_offset(date(2025, 1, 15)), 1.);
+        assert_eq!(config.icon(), super::default_icon());
+    }
+
+    #[test]
+    fn test_default_icon_resolves() {
+        let icon = super::default_icon();
+        if cfg!(debug_assertions) {
+            assert!(icon.is_file(), "{} should exist", icon.display());
+        } else {
+            assert_eq!(icon, std::path::PathBuf::from(super::ICON_NAME));
+        }
     }
 
     #[test]
@@ -340,52 +359,62 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_timezone_to_offset_fixed() {
-        let d = chrono::NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
-        assert_eq!(super::timezone_to_offset(chrono_tz::UTC, d), 0);
-        assert_eq!(super::timezone_to_offset(chrono_tz::Asia::Riyadh, d), 3);
-        // Asia/Kolkata is +05:30; the hour-resolution implementation truncates
-        // the half-hour — document that.
-        assert_eq!(super::timezone_to_offset(chrono_tz::Asia::Kolkata, d), 5);
+    fn date(y: i32, m: u32, d: u32) -> chrono::NaiveDate {
+        chrono::NaiveDate::from_ymd_opt(y, m, d).unwrap()
     }
 
     #[test]
-    fn test_timezone_to_offset_dst() {
-        let winter = chrono::NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
-        let summer = chrono::NaiveDate::from_ymd_opt(2025, 7, 15).unwrap();
-
+    fn test_utc_offset_hours_fixed() {
+        let d = date(2025, 1, 15);
+        assert_eq!(super::utc_offset_hours(&chrono_tz::UTC, d), 0.);
+        assert_eq!(super::utc_offset_hours(&chrono_tz::Asia::Riyadh, d), 3.);
+        assert_eq!(super::utc_offset_hours(&chrono_tz::Asia::Kolkata, d), 5.5);
         assert_eq!(
-            super::timezone_to_offset(chrono_tz::Europe::Paris, winter),
-            1
+            super::utc_offset_hours(&chrono_tz::Asia::Kathmandu, d),
+            5.75
         );
         assert_eq!(
-            super::timezone_to_offset(chrono_tz::Europe::Paris, summer),
-            2
-        );
-
-        assert_eq!(
-            super::timezone_to_offset(chrono_tz::America::New_York, winter),
-            -5
-        );
-        assert_eq!(
-            super::timezone_to_offset(chrono_tz::America::New_York, summer),
-            -4
+            super::utc_offset_hours(&chrono_tz::America::St_Johns, d),
+            -3.5
         );
     }
 
     #[test]
-    fn test_parse_timezone_string_invalid_falls_back_to_system() {
-        let d = chrono::NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
-        let fallback = super::parse_timezone_string("Not/A_Real_Tz", d);
-        assert_eq!(fallback, super::system_timezone_offset());
+    fn test_utc_offset_hours_dst() {
+        let winter = date(2025, 1, 15);
+        let summer = date(2025, 7, 15);
+        assert_eq!(
+            super::utc_offset_hours(&chrono_tz::Europe::Paris, winter),
+            1.
+        );
+        assert_eq!(
+            super::utc_offset_hours(&chrono_tz::Europe::Paris, summer),
+            2.
+        );
+        assert_eq!(
+            super::utc_offset_hours(&chrono_tz::America::New_York, winter),
+            -5.
+        );
+        assert_eq!(
+            super::utc_offset_hours(&chrono_tz::America::New_York, summer),
+            -4.
+        );
     }
 
     #[test]
-    fn test_parse_timezone_string_valid() {
-        let d = chrono::NaiveDate::from_ymd_opt(2025, 1, 15).unwrap();
-        assert_eq!(super::parse_timezone_string("UTC", d), 0);
-        assert_eq!(super::parse_timezone_string("Asia/Riyadh", d), 3);
+    fn test_timezone_offset_invalid_falls_back_to_system() {
+        let config: Config = toml::from_str(r#"timezone = "Not/A_Real_Tz""#).unwrap();
+        let d = date(2025, 1, 15);
+        assert_eq!(
+            config.timezone_offset(d),
+            super::utc_offset_hours(&chrono::Local, d)
+        );
+    }
+
+    #[test]
+    fn test_timezone_offset_valid() {
+        let config: Config = toml::from_str(r#"timezone = "Asia/Kolkata""#).unwrap();
+        assert_eq!(config.timezone_offset(date(2025, 1, 15)), 5.5);
     }
 
     #[test]
@@ -411,7 +440,7 @@ mod tests {
             icon: None,
             urgency: None,
         };
-        let config = Config::new(&args);
+        let config = Config::merge(&args, Config::default());
 
         assert!((config.offset(Event::Fajr) - 5.0 / 60.0).abs() < 1e-10);
         assert!((config.offset(Event::Dhuhr) + 10.0 / 60.0).abs() < 1e-10);
