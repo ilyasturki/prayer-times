@@ -238,7 +238,7 @@ pub(crate) fn utc_offset_hours<Tz: TimeZone>(timezone: &Tz, date: NaiveDate) -> 
 }
 
 // Packages install the icon into the hicolor theme under this name
-const ICON_NAME: &str = "prayer-times";
+pub(crate) const ICON_NAME: &str = "prayer-times";
 
 fn default_icon() -> path::PathBuf {
     if cfg!(debug_assertions) {
