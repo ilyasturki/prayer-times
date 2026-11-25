@@ -27,34 +27,11 @@ impl Event {
             Fajr | Midnight => Isha,
         }
     }
-    pub fn next(&self) -> Event {
-        use Event::{Asr, Dhuhr, Fajr, Isha, Maghrib, Midnight, Sunrise, Sunset};
-        match self {
-            Fajr => Sunrise,
-            Sunrise => Dhuhr,
-            Dhuhr => Asr,
-            Asr => Maghrib,
-            Sunset | Maghrib => Isha,
-            Isha => Midnight,
-            Midnight => Fajr,
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Event;
-
-    #[test]
-    fn test_next_cycles_through_all_events() {
-        assert_eq!(Event::Fajr.next(), Event::Sunrise);
-        assert_eq!(Event::Sunrise.next(), Event::Dhuhr);
-        assert_eq!(Event::Dhuhr.next(), Event::Asr);
-        assert_eq!(Event::Asr.next(), Event::Maghrib);
-        assert_eq!(Event::Maghrib.next(), Event::Isha);
-        assert_eq!(Event::Isha.next(), Event::Midnight);
-        assert_eq!(Event::Midnight.next(), Event::Fajr);
-    }
 
     #[test]
     fn test_previous_cycles_through_all_events() {
@@ -67,12 +44,8 @@ mod tests {
         assert_eq!(Event::Midnight.previous(), Event::Isha);
     }
 
-    // Sunset sits off the main navigation cycle — Asr and Maghrib both point
-    // forward to Isha. A regression that orphans Sunset would still leave all
-    // other arms passing, so lock it in explicitly.
     #[test]
-    fn test_sunset_edge_case() {
-        assert_eq!(Event::Sunset.next(), Event::Isha);
+    fn test_sunset_previous_is_asr() {
         assert_eq!(Event::Sunset.previous(), Event::Asr);
     }
 

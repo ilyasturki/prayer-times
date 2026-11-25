@@ -1,7 +1,7 @@
 use crate::calculations::AstronomicalMeasures;
 use crate::event::Event;
 use crate::Config;
-use chrono::{Days, Duration, Local, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{Days, Duration, NaiveDate, NaiveDateTime, NaiveTime};
 
 pub struct Prayer {
     event: Event,
@@ -47,7 +47,7 @@ impl Prayer {
 
     pub fn previous(&self) -> Prayer {
         let previous_prayer = self.new_from_date(self.event.previous());
-        if previous_prayer.time() <= self.time() {
+        if previous_prayer.date_time() <= self.date_time() {
             return previous_prayer;
         }
 
@@ -58,24 +58,9 @@ impl Prayer {
         Self::new(self.event.previous(), previous_date, &self.config)
     }
 
-    pub fn next(&self) -> Prayer {
-        let next_prayer = self.new_from_date(self.event.next());
-        if next_prayer.date_time().time() >= self.date_time().time() {
-            return next_prayer;
-        }
-
-        let next_date = self
-            .date()
-            .checked_add_days(Days::new(1))
-            .expect("Overflow when adding days");
-        Self::new(self.event.next(), next_date, &self.config)
-    }
-
     // Returns the time remaining for the next prayer to happen
     pub fn time_remaining(&self) -> Duration {
-        let duration = self
-            .date_time()
-            .signed_duration_since(Local::now().naive_local());
+        let duration = self.date_time().signed_duration_since(self.config.now());
 
         // The time remaining should not be negative
         if duration < Duration::zero() {
@@ -143,8 +128,6 @@ mod tests {
         assert_eq!(previous.date(), date);
     }
 
-    // Fajr's previous is Isha, which for Paris always belongs to the prior day.
-    // Exercises the checked_sub_days branch at prayer.rs:54.
     #[test]
     fn test_previous_crosses_to_prior_day() {
         let config = paris_config();
@@ -156,23 +139,6 @@ mod tests {
             previous.date(),
             NaiveDate::from_ymd_opt(2025, 10, 1).unwrap()
         );
-    }
-
-    // Isha.next() is Midnight; Midnight's time-of-day (01:39 for Paris
-    // 2025-10-02) is earlier than Isha's (20:35), so the next() helper takes
-    // the checked_add_days branch at prayer.rs and rebuilds measures for the
-    // following day.
-    #[test]
-    fn test_next_crosses_to_following_day() {
-        let config = paris_config();
-        let date = paris_date();
-        let isha = Prayer::new(Event::Isha, date, &config);
-        let next = isha.next();
-
-        assert_eq!(next.event(), Event::Midnight);
-        // Resulting midnight must be strictly after isha on the wall clock,
-        // which is the invariant the cross-day logic exists to maintain.
-        assert!(next.date_time() > isha.date_time());
     }
 
     #[test]
